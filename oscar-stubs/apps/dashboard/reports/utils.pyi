@@ -1,0 +1,6 @@
+from oscar.apps.dashboard.reports.reports import ReportGenerator
+
+class GeneratorRepository:
+    generators: list[type[ReportGenerator]]
+    def get_report_generators(self) -> list[type[ReportGenerator]]: ...
+    def get_generator(self, code: str) -> type[ReportGenerator] | None: ...

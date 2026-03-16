@@ -1,0 +1,9 @@
+from oscar.apps.voucher.abstract_models import (
+    AbstractVoucher,
+    AbstractVoucherApplication,
+    AbstractVoucherSet,
+)
+
+class VoucherSet(AbstractVoucherSet): ...
+class Voucher(AbstractVoucher): ...
+class VoucherApplication(AbstractVoucherApplication): ...

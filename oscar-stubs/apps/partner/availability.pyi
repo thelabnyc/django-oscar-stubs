@@ -1,0 +1,38 @@
+from typing import ClassVar
+import datetime
+
+class Base:
+    code: ClassVar[str]
+    message: ClassVar[str]
+    dispatch_date: ClassVar[datetime.date | None]
+
+    @property
+    def short_message(self) -> str: ...
+    @property
+    def is_available_to_buy(self) -> bool: ...
+    def is_purchase_permitted(self, quantity: int) -> tuple[bool, str]: ...
+
+class Unavailable(Base):
+    code: ClassVar[str]
+    message: ClassVar[str]
+
+class Available(Base):
+    code: ClassVar[str]
+    message: ClassVar[str]
+
+    def is_purchase_permitted(self, quantity: int) -> tuple[bool, str]: ...
+
+class StockRequired(Base):
+    CODE_IN_STOCK: ClassVar[str]
+    CODE_OUT_OF_STOCK: ClassVar[str]
+
+    num_available: int
+
+    def __init__(self, num_available: int) -> None: ...
+    def is_purchase_permitted(self, quantity: int) -> tuple[bool, str]: ...
+    @property
+    def code(self) -> str: ...  # type: ignore[override]
+    @property
+    def short_message(self) -> str: ...  # type: ignore[override]
+    @property
+    def message(self) -> str: ...  # type: ignore[override]

@@ -1,0 +1,9 @@
+from oscar.apps.wishlists.abstract_models import (
+    AbstractLine,
+    AbstractWishList,
+    AbstractWishListSharedEmail,
+)
+
+class WishList(AbstractWishList): ...
+class Line(AbstractLine): ...
+class WishListSharedEmail(AbstractWishListSharedEmail): ...

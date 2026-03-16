@@ -1,0 +1,9 @@
+from oscar.apps.communication.abstract_models import (
+    AbstractCommunicationEventType,
+    AbstractEmail,
+    AbstractNotification,
+)
+
+class Email(AbstractEmail): ...
+class CommunicationEventType(AbstractCommunicationEventType): ...
+class Notification(AbstractNotification): ...

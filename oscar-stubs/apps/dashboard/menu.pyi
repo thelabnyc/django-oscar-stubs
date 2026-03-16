@@ -1,0 +1,6 @@
+from typing import Any
+
+from oscar.apps.dashboard.nav import Node
+
+def get_nodes(user: Any) -> list[Node]: ...
+def create_menu(menu_items: list[dict[str, Any]], parent: Node | None = ...) -> list[Node]: ...

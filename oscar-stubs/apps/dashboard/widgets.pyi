@@ -1,0 +1,29 @@
+from typing import Any
+
+from django.forms import Widget
+
+class RelatedFieldWidgetWrapper(Widget):
+    template_name: str
+    IS_POPUP_VALUE: str
+    IS_POPUP_VAR: str
+    TO_FIELD_VAR: str
+    needs_multipart_form: bool
+    attrs: dict[str, Any]
+    choices: Any
+    widget: Widget
+    rel: Any
+
+    def __init__(self, widget: Widget, rel: Any) -> None: ...
+    def __deepcopy__(self, memo: dict[int, Any]) -> RelatedFieldWidgetWrapper: ...
+    @property
+    def is_hidden(self) -> bool: ...
+    @property
+    def media(self) -> Any: ...
+    def get_related_url(self, info: tuple[str, str], action: str, *args: Any) -> str: ...
+    def get_context(self, name: str, value: Any, attrs: dict[str, Any] | None) -> dict[str, Any]: ...
+    def value_from_datadict(self, data: dict[str, Any], files: dict[str, Any], name: str) -> Any: ...
+    def value_omitted_from_data(self, data: dict[str, Any], files: dict[str, Any], name: str) -> bool: ...
+    def id_for_label(self, id_: str) -> str: ...
+
+class RelatedMultipleFieldWidgetWrapper(RelatedFieldWidgetWrapper):
+    template_name: str

@@ -1,0 +1,6 @@
+from typing import overload
+
+@overload
+def deprecated[T](obj: type[T]) -> type[T]: ...
+@overload
+def deprecated[T](obj: T) -> T: ...

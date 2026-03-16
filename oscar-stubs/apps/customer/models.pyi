@@ -1,0 +1,3 @@
+from oscar.apps.customer.abstract_models import AbstractProductAlert
+
+class ProductAlert(AbstractProductAlert): ...

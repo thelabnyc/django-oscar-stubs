@@ -1,0 +1,9 @@
+from oscar.apps.shipping.abstract_models import (
+    AbstractOrderAndItemCharges,
+    AbstractWeightBand,
+    AbstractWeightBased,
+)
+
+class OrderAndItemCharges(AbstractOrderAndItemCharges): ...
+class WeightBased(AbstractWeightBased): ...
+class WeightBand(AbstractWeightBand): ...

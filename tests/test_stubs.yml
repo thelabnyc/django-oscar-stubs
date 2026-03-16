@@ -1,0 +1,186 @@
+- case: get_model_resolves_order
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    Order = get_model('order', 'Order')
+    reveal_type(Order)  # N: Revealed type is "type[oscar.apps.order.models.Order]"
+
+- case: get_model_resolves_basket
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    Basket = get_model('basket', 'Basket')
+    reveal_type(Basket)  # N: Revealed type is "type[oscar.apps.basket.models.Basket]"
+
+- case: get_model_resolves_partner
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    Partner = get_model('partner', 'Partner')
+    reveal_type(Partner)  # N: Revealed type is "type[oscar.apps.partner.models.Partner]"
+
+- case: get_model_resolves_reviews_app_label
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    ProductReview = get_model('reviews', 'ProductReview')
+    reveal_type(ProductReview)  # N: Revealed type is "type[oscar.apps.catalogue.reviews.models.ProductReview]"
+
+- case: get_class_resolves_form
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_class
+    UserAddressForm = get_class('address.forms', 'UserAddressForm')
+    reveal_type(UserAddressForm)  # N: Revealed type is "type[oscar.apps.address.forms.UserAddressForm]"
+
+- case: get_class_resolves_customer_form
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_class
+    EmailAuthenticationForm = get_class('customer.forms', 'EmailAuthenticationForm')
+    reveal_type(EmailAuthenticationForm)  # N: Revealed type is "type[oscar.apps.customer.forms.EmailAuthenticationForm]"
+
+- case: get_classes_resolves_tuple
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_classes
+    BasketLineForm, SavedLineForm = get_classes('basket.forms', ['BasketLineForm', 'SavedLineForm'])
+    reveal_type(BasketLineForm)  # N: Revealed type is "type[oscar.apps.basket.forms.BasketLineForm]"
+    reveal_type(SavedLineForm)  # N: Revealed type is "type[oscar.apps.basket.forms.SavedLineForm]"
+
+- case: get_model_non_literal_fallback
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    app_label: str = 'order'
+    Order = get_model(app_label, 'Order')
+    reveal_type(Order)  # N: Revealed type is "type[django.db.models.base.Model]"
+
+- case: get_class_non_literal_fallback
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_class
+    module_label: str = 'address.forms'
+    Cls = get_class(module_label, 'UserAddressForm')
+    reveal_type(Cls)  # N: Revealed type is "builtins.type"
+
+- case: get_model_unknown_app_label_fallback
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    Model = get_model('nonexistent', 'Foo')
+    reveal_type(Model)  # N: Revealed type is "type[django.db.models.base.Model]"
+
+- case: get_class_unknown_class_fallback
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_class
+    Cls = get_class('address.forms', 'NonexistentForm')
+    reveal_type(Cls)  # N: Revealed type is "builtins.type"
+
+- case: get_classes_with_tuple_syntax
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_classes
+    BasketLineForm, SavedLineForm = get_classes('basket.forms', ('BasketLineForm', 'SavedLineForm'))
+    reveal_type(BasketLineForm)  # N: Revealed type is "type[oscar.apps.basket.forms.BasketLineForm]"
+    reveal_type(SavedLineForm)  # N: Revealed type is "type[oscar.apps.basket.forms.SavedLineForm]"
+
+- case: get_classes_non_literal_fallback
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_classes
+    module_label: str = 'basket.forms'
+    result = get_classes(module_label, ['BasketLineForm', 'SavedLineForm'])
+    reveal_type(result)  # N: Revealed type is "builtins.list[builtins.type]"
+
+- case: get_model_unknown_model_name_fallback
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_model
+    Model = get_model('order', 'NonexistentModel')
+    reveal_type(Model)  # N: Revealed type is "type[django.db.models.base.Model]"

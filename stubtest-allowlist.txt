@@ -1,0 +1,23 @@
+# Modules that don't need stubs
+oscar.test
+oscar.test.*
+oscar.templatetags
+oscar.templatetags.*
+oscar.management
+oscar.management.*
+oscar.locale
+oscar.locale.*
+oscar.static_src
+oscar.static_src.*
+oscar.templates
+oscar.templates.*
+
+# Internal/private modules
+oscar.core.logging
+oscar.core.logging.*
+oscar.utils
+oscar.utils.*
+
+# __conditional_annotations__ is an internal CPython/mypy detail for TYPE_CHECKING blocks
+oscar.__conditional_annotations__
+oscar.core.__conditional_annotations__
