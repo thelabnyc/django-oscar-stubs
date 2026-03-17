@@ -184,3 +184,55 @@
     from oscar.core.loading import get_model
     Model = get_model('order', 'NonexistentModel')
     reveal_type(Model)  # N: Revealed type is "type[django.db.models.base.Model]"
+
+- case: fk_resolves_to_concrete_model
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.apps.address.abstract_models import AbstractAddress
+    addr: AbstractAddress
+    reveal_type(addr.country)  # N: Revealed type is "oscar.apps.address.models.Country"
+
+- case: nullable_fk_resolves_to_concrete_with_none
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.apps.order.abstract_models import AbstractOrder
+    order: AbstractOrder
+    reveal_type(order.basket)  # N: Revealed type is "oscar.apps.basket.models.Basket | None"
+
+- case: cross_app_fk_resolves_to_concrete
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.apps.order.abstract_models import AbstractLine
+    line: AbstractLine
+    reveal_type(line.product)  # N: Revealed type is "oscar.apps.catalogue.models.Product | None"
+
+- case: queryset_property_remaps_abstract_type_arg
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.apps.order.abstract_models import AbstractOrder
+    order: AbstractOrder
+    reveal_type(order.basket_discounts)  # N: Revealed type is "django.db.models.query.QuerySet[oscar.apps.order.models.OrderDiscount, oscar.apps.order.models.OrderDiscount]"

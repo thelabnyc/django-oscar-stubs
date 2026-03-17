@@ -17,12 +17,13 @@ from functools import partial
 import ast
 import configparser
 import os
+import re
 import sys
 
 from mypy.nodes import Import, ImportAll, ImportFrom, ListExpr, MypyFile, StrExpr, TupleExpr, TypeInfo
 from mypy.options import Options
-from mypy.plugin import FunctionContext, Plugin
-from mypy.types import AnyType, Instance, TupleType, Type, TypeOfAny, TypeType
+from mypy.plugin import AttributeContext, FunctionContext, Plugin
+from mypy.types import AnyType, Instance, TupleType, Type, TypeOfAny, TypeType, UnionType, get_proper_type
 
 # ──────────────────────────────────────────────────────────────────────
 # Oscar app label → default oscar module path (relative to oscar.apps)
@@ -94,6 +95,9 @@ _OSCAR_CONFIG_CLASS_TO_LABEL: dict[str, str] = {
     "UsersDashboardConfig": "users_dashboard",
     "VouchersDashboardConfig": "vouchers_dashboard",
 }
+
+# Reverse map: oscar.apps sub-path → app label
+_OSCAR_PATH_TO_LABEL: dict[str, str] = {v: k for k, v in APP_LABEL_MAP.items()}
 
 _OSCAR_GET_MODEL = "oscar.core.loading.get_model"
 _OSCAR_GET_CLASS = "oscar.core.loading.get_class"
@@ -316,6 +320,77 @@ def _find_stubbed_modules() -> set[str]:
 
 
 # ──────────────────────────────────────────────────────────────────────
+# Abstract → concrete model remapping
+# ──────────────────────────────────────────────────────────────────────
+
+# Pattern: oscar.apps.<path>.abstract_models.Abstract<Name>
+_ABSTRACT_MODEL_RE = re.compile(r"^oscar\.apps\.(.+)\.abstract_models\.Abstract(\w+)$")
+
+
+def _is_oscar_abstract_model(fullname: str) -> bool:
+    """Check if a fully qualified name is an oscar abstract model class."""
+    return _ABSTRACT_MODEL_RE.match(fullname) is not None
+
+
+def _resolve_abstract_to_concrete(fullname: str, plugin: OscarPlugin) -> Type | None:
+    """Resolve an oscar abstract model fullname to its concrete model type.
+
+    E.g. oscar.apps.address.abstract_models.AbstractCountry → Country
+    from oscar.apps.address.models (or forked equivalent).
+    """
+    m = _ABSTRACT_MODEL_RE.match(fullname)
+    if m is None:
+        return None
+    oscar_path = m.group(1)  # e.g. "address", "catalogue.reviews"
+    model_name = m.group(2)  # e.g. "Country" (without "Abstract" prefix)
+
+    app_label = _OSCAR_PATH_TO_LABEL.get(oscar_path)
+    if app_label is None:
+        return None
+
+    return _resolve_model(app_label, model_name, plugin)
+
+
+def _remap_abstract_type(typ: Type, plugin: OscarPlugin) -> Type:
+    """Recursively walk a type, replacing oscar abstract model instances with concrete ones."""
+    typ = get_proper_type(typ)
+
+    if isinstance(typ, Instance):
+        fullname = typ.type.fullname
+        # If this is an oscar abstract model, resolve to concrete
+        if _is_oscar_abstract_model(fullname):
+            concrete = _resolve_abstract_to_concrete(fullname, plugin)
+            if concrete is not None:
+                concrete = get_proper_type(concrete)
+                # Carry over type args from the original if the concrete has matching params
+                if isinstance(concrete, Instance) and typ.args:
+                    concrete = concrete.copy_modified(args=[_remap_abstract_type(a, plugin) for a in typ.args])
+                return concrete
+
+        # Even if not abstract itself, remap type args (e.g. QuerySet[AbstractProduct])
+        if typ.args:
+            new_args = [_remap_abstract_type(a, plugin) for a in typ.args]
+            if new_args != list(typ.args):
+                return typ.copy_modified(args=new_args)
+
+    elif isinstance(typ, UnionType):
+        new_items = [_remap_abstract_type(item, plugin) for item in typ.items]
+        if new_items != typ.items:
+            return UnionType.make_union(new_items)
+
+    return typ
+
+
+def _remap_abstract_attr_hook(ctx: AttributeContext, *, plugin: OscarPlugin) -> Type:
+    """Attribute hook callback: remap abstract model types to concrete ones."""
+    # Don't remap setter types — keep abstract (more permissive) for assignments
+    if ctx.is_lvalue:
+        return ctx.default_attr_type
+
+    return _remap_abstract_type(ctx.default_attr_type, plugin)
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Type resolution
 # ──────────────────────────────────────────────────────────────────────
 
@@ -503,23 +578,23 @@ class OscarPlugin(Plugin):
     def get_additional_deps(self, file: MypyFile) -> list[tuple[int, str, int]]:
         """Declare dependencies on oscar app modules.
 
-        When a file imports oscar.core.loading, ensure that all stubbed
-        oscar modules AND any forked override modules are loaded so that
-        type lookup succeeds in the function hooks.
+        When a file imports from oscar.apps.* or oscar.core.loading, ensure
+        that all stubbed oscar modules AND any forked override modules are
+        loaded so that type lookup succeeds in hooks.
         """
         from mypy.build import PRI_MYPY
 
-        has_loading_import = False
+        has_oscar_import = False
         for imp in file.imports:
             if isinstance(imp, (ImportFrom, ImportAll)):
-                if imp.id == "oscar.core.loading":
-                    has_loading_import = True
+                if imp.id == "oscar.core.loading" or imp.id.startswith("oscar.apps."):
+                    has_oscar_import = True
                     break
             elif isinstance(imp, Import):
-                if any(mod_id == "oscar.core.loading" for mod_id, _ in imp.ids):
-                    has_loading_import = True
+                if any(mod_id == "oscar.core.loading" or mod_id.startswith("oscar.apps.") for mod_id, _ in imp.ids):
+                    has_oscar_import = True
                     break
-        if not has_loading_import:
+        if not has_oscar_import:
             return []
 
         deps: list[tuple[int, str, int]] = []
@@ -533,6 +608,14 @@ class OscarPlugin(Plugin):
             deps.append((PRI_MYPY, f"{override_module}.models", -1))
 
         return deps
+
+    def get_attribute_hook(self, fullname: str) -> Callable[[AttributeContext], Type] | None:
+        """Remap abstract model types to concrete ones on attribute access."""
+        # fullname is "some.module.ClassName.attr_name"
+        class_fullname, _, _ = fullname.rpartition(".")
+        if _is_oscar_abstract_model(class_fullname):
+            return partial(_remap_abstract_attr_hook, plugin=self)
+        return None
 
     def get_function_hook(self, fullname: str) -> Callable[[FunctionContext], Type] | None:
         if fullname == _OSCAR_GET_MODEL:
