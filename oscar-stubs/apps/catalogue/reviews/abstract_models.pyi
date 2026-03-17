@@ -3,15 +3,18 @@ from typing import Any, ClassVar
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from oscar.apps.catalogue.abstract_models import AbstractProduct
 from oscar.models.fields import NullCharField
 
 class AbstractProductReview(models.Model):
-    product: models.ForeignKey[Any | None | Combinable, Any | None]
+    product: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    product_id: int | None
     SCORE_CHOICES: ClassVar[tuple[tuple[int, int], ...]]
     score: models.SmallIntegerField
     title: models.CharField
     body: models.TextField
     user: models.ForeignKey[User | None | Combinable, User | None]
+    user_id: int | None
     name: models.CharField
     email: models.EmailField
     homepage: models.URLField
@@ -59,10 +62,14 @@ class AbstractProductReview(models.Model):
     def reviewer_name(self) -> str: ...
     def update_totals(self) -> None: ...
     def can_user_vote(self, user: User) -> tuple[bool, str]: ...
+    def get_score_display(self) -> str: ...
+    def get_status_display(self) -> str: ...
 
 class AbstractVote(models.Model):
-    review: models.ForeignKey[Any | Combinable, Any]
+    review: models.ForeignKey[AbstractProductReview | Combinable, AbstractProductReview]
+    review_id: int
     user: models.ForeignKey[User | Combinable, User]
+    user_id: int
     UP: ClassVar[int]
     DOWN: ClassVar[int]
     VOTE_CHOICES: ClassVar[tuple[tuple[int, str], ...]]
@@ -79,3 +86,4 @@ class AbstractVote(models.Model):
 
     def clean(self) -> None: ...
     def save(self, *args: Any, **kwargs: Any) -> None: ...
+    def get_delta_display(self) -> str: ...

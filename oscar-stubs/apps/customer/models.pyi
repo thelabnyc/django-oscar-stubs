@@ -1,3 +1,4 @@
 from oscar.apps.customer.abstract_models import AbstractProductAlert
 
-class ProductAlert(AbstractProductAlert): ...
+class ProductAlert(AbstractProductAlert):
+    id: int

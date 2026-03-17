@@ -4,11 +4,11 @@ from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.views import generic
 from django_tables2 import SingleTableMixin, SingleTableView
-from oscar.apps.dashboard.catalogue.mixins import PartnerProductFilterMixin, PublicVisibilityUpdateMixin
+from oscar.apps.dashboard.catalogue.mixins import PartnerProductFilterMixin
 from oscar.apps.dashboard.views import PopUpWindowCreateMixin, PopUpWindowDeleteMixin, PopUpWindowUpdateMixin
 from oscar.views.generic import ObjectLookupView
 
-class ProductListView(PublicVisibilityUpdateMixin, PartnerProductFilterMixin, SingleTableView):
+class ProductListView(PartnerProductFilterMixin, SingleTableView):
     template_name: str
     form_class: type
     productclass_form_class: type
@@ -75,7 +75,7 @@ class StockAlertListView(generic.ListView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]: ...
     def get_queryset(self) -> QuerySet[Any]: ...
 
-class CategoryListView(PublicVisibilityUpdateMixin, SingleTableView):
+class CategoryListView(SingleTableView):
     template_name: str
     table_class: type
     form_class: type
@@ -84,7 +84,7 @@ class CategoryListView(PublicVisibilityUpdateMixin, SingleTableView):
     def get_queryset(self) -> QuerySet[Any]: ...
     def get_context_data(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
 
-class CategoryDetailListView(PublicVisibilityUpdateMixin, SingleTableMixin, generic.DetailView):
+class CategoryDetailListView(SingleTableMixin, generic.DetailView):
     template_name: str
     context_object_name: str
     table_class: type

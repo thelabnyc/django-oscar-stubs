@@ -93,6 +93,3 @@ class OptionForm(forms.ModelForm):
     class Meta:
         model: type
         fields: list[str]
-
-class CategorySearchForm(forms.Form):
-    name: forms.CharField

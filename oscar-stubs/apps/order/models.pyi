@@ -53,19 +53,50 @@ from oscar.apps.order.abstract_models import (
     ShippingEventQuantity as ShippingEventQuantity,
 )
 
-class Order(AbstractOrder): ...
-class OrderNote(AbstractOrderNote): ...
-class OrderStatusChange(AbstractOrderStatusChange): ...
-class CommunicationEvent(AbstractCommunicationEvent): ...
-class ShippingAddress(AbstractShippingAddress): ...
-class BillingAddress(AbstractBillingAddress): ...
-class Line(AbstractLine): ...
-class LinePrice(AbstractLinePrice): ...
-class LineAttribute(AbstractLineAttribute): ...
-class ShippingEvent(AbstractShippingEvent): ...
-class ShippingEventType(AbstractShippingEventType): ...
-class PaymentEvent(AbstractPaymentEvent): ...
-class PaymentEventType(AbstractPaymentEventType): ...
-class OrderDiscount(AbstractOrderDiscount): ...
-class OrderLineDiscount(AbstractOrderLineDiscount): ...
-class Surcharge(AbstractSurcharge): ...
+class Order(AbstractOrder):
+    id: int
+
+class OrderNote(AbstractOrderNote):
+    id: int
+
+class OrderStatusChange(AbstractOrderStatusChange):
+    id: int
+
+class CommunicationEvent(AbstractCommunicationEvent):
+    id: int
+
+class ShippingAddress(AbstractShippingAddress):
+    id: int
+
+class BillingAddress(AbstractBillingAddress):
+    id: int
+
+class Line(AbstractLine):
+    id: int
+
+class LinePrice(AbstractLinePrice):
+    id: int
+
+class LineAttribute(AbstractLineAttribute):
+    id: int
+
+class ShippingEvent(AbstractShippingEvent):
+    id: int
+
+class ShippingEventType(AbstractShippingEventType):
+    id: int
+
+class PaymentEvent(AbstractPaymentEvent):
+    id: int
+
+class PaymentEventType(AbstractPaymentEventType):
+    id: int
+
+class OrderDiscount(AbstractOrderDiscount):
+    id: int
+
+class OrderLineDiscount(AbstractOrderLineDiscount):
+    id: int
+
+class Surcharge(AbstractSurcharge):
+    id: int

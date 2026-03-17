@@ -1,5 +1,6 @@
 from typing import Any, ClassVar
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
@@ -8,6 +9,7 @@ from oscar.models.fields import AutoSlugField
 
 class AbstractEmail(models.Model):
     user: ForeignKey[Any | None | Combinable, Any | None]
+    user_id: int | None
     email: models.EmailField[str | None | Combinable, str | None]
     subject: models.TextField[str | Combinable, str]
     body_text: models.TextField[str | Combinable, str]
@@ -46,6 +48,7 @@ class AbstractCommunicationEventType(models.Model):
     def get_messages(self, ctx: dict[str, Any] | None = ...) -> dict[str, str]: ...
     def is_order_related(self) -> bool: ...
     def is_user_related(self) -> bool: ...
+    def get_category_display(self) -> str: ...
 
     class Meta:
         abstract: bool
@@ -59,8 +62,10 @@ class AbstractNotification(models.Model):
     ARCHIVE: ClassVar[str]
     choices: ClassVar[tuple[tuple[str, str], ...]]
 
-    recipient: ForeignKey[Any | Combinable, Any]
-    sender: ForeignKey[Any | None | Combinable, Any | None]
+    recipient: ForeignKey[User | Combinable, User]
+    recipient_id: int
+    sender: ForeignKey[User | None | Combinable, User | None]
+    sender_id: int | None
     subject: models.CharField[str | int | Combinable, str]
     body: models.TextField[str | Combinable, str]
     location: models.CharField[str | int | Combinable, str]
@@ -70,6 +75,7 @@ class AbstractNotification(models.Model):
     def archive(self) -> None: ...
     @property
     def is_read(self) -> bool: ...
+    def get_location_display(self) -> str: ...
 
     class Meta:
         abstract: bool

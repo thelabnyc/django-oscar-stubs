@@ -2,13 +2,15 @@ from decimal import Decimal
 from typing import Any, ClassVar
 import datetime
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class AbstractPartner(models.Model):
     code: models.CharField[str | Combinable, str]
     name: models.CharField[str | Combinable, str]
-    users: models.ManyToManyField[Any, Any]
+    users: models.ManyToManyField[User, User]
 
     @property
     def display_name(self) -> str: ...
@@ -25,8 +27,10 @@ class AbstractPartner(models.Model):
         verbose_name_plural: str
 
 class AbstractStockRecord(models.Model):
-    product: models.ForeignKey[Any | Combinable, Any]
-    partner: models.ForeignKey[Any | Combinable, Any]
+    product: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    product_id: int
+    partner: models.ForeignKey[AbstractPartner | Combinable, AbstractPartner]
+    partner_id: int
     partner_sku: models.CharField[str | Combinable, str]
     price_currency: models.CharField[str | Combinable, str]
     price: models.DecimalField[Decimal | str | Combinable | None, Decimal | None]
@@ -57,7 +61,8 @@ class AbstractStockRecord(models.Model):
     def is_below_threshold(self) -> bool: ...
 
 class AbstractStockAlert(models.Model):
-    stockrecord: models.ForeignKey[Any | Combinable, Any]
+    stockrecord: models.ForeignKey[AbstractStockRecord | Combinable, AbstractStockRecord]
+    stockrecord_id: int
     threshold: models.PositiveIntegerField[int | Combinable, int]
 
     OPEN: ClassVar[str]
@@ -76,3 +81,4 @@ class AbstractStockAlert(models.Model):
         verbose_name_plural: str
 
     def close(self) -> None: ...
+    def get_status_display(self) -> str: ...

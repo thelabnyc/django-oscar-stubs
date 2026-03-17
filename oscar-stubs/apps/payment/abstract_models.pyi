@@ -2,9 +2,11 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, ClassVar
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from oscar.apps.order.abstract_models import AbstractOrder
 from oscar.models.fields import AutoSlugField
 
 class AbstractTransaction(models.Model):
@@ -12,7 +14,8 @@ class AbstractTransaction(models.Model):
     DEBIT: ClassVar[str]
     REFUND: ClassVar[str]
 
-    source: ForeignKey[Any | Combinable, Any]
+    source: ForeignKey[AbstractSource | Combinable, AbstractSource]
+    source_id: int
     txn_type: models.CharField[str | int | Combinable, str]
     amount: models.DecimalField[str | float | Decimal | Combinable, Decimal]
     reference: models.CharField[str | int | Combinable, str]
@@ -27,8 +30,10 @@ class AbstractTransaction(models.Model):
         verbose_name_plural: str
 
 class AbstractSource(models.Model):
-    order: ForeignKey[Any | Combinable, Any]
-    source_type: ForeignKey[Any | Combinable, Any]
+    order: ForeignKey[AbstractOrder | Combinable, AbstractOrder]
+    order_id: int
+    source_type: ForeignKey[AbstractSourceType | Combinable, AbstractSourceType]
+    source_type_id: int
     currency: models.CharField[str | int | Combinable, str]
     amount_allocated: models.DecimalField[str | float | Decimal | Combinable, Decimal]
     amount_debited: models.DecimalField[str | float | Decimal | Combinable, Decimal]
@@ -71,7 +76,8 @@ class AbstractSourceType(models.Model):
         verbose_name_plural: str
 
 class AbstractBankcard(models.Model):
-    user: ForeignKey[Any | Combinable, Any]
+    user: ForeignKey[User | Combinable, User]
+    user_id: int
     card_type: models.CharField[str | int | Combinable, str]
     name: models.CharField[str | int | Combinable, str]
     number: models.CharField[str | int | Combinable, str]

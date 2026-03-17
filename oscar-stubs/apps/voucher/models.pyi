@@ -4,6 +4,11 @@ from oscar.apps.voucher.abstract_models import (
     AbstractVoucherSet,
 )
 
-class VoucherSet(AbstractVoucherSet): ...
-class Voucher(AbstractVoucher): ...
-class VoucherApplication(AbstractVoucherApplication): ...
+class VoucherSet(AbstractVoucherSet):
+    id: int
+
+class Voucher(AbstractVoucher):
+    id: int
+
+class VoucherApplication(AbstractVoucherApplication):
+    id: int

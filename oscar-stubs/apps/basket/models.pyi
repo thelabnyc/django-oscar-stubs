@@ -9,6 +9,12 @@ from oscar.apps.basket.abstract_models import (
 )
 
 class InvalidBasketLineError(Exception): ...
-class Basket(AbstractBasket): ...
-class Line(AbstractLine): ...
-class LineAttribute(AbstractLineAttribute): ...
+
+class Basket(AbstractBasket):
+    id: int
+
+class Line(AbstractLine):
+    id: int
+
+class LineAttribute(AbstractLineAttribute):
+    id: int

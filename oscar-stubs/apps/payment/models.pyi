@@ -5,7 +5,14 @@ from oscar.apps.payment.abstract_models import (
     AbstractTransaction,
 )
 
-class Transaction(AbstractTransaction): ...
-class Source(AbstractSource): ...
-class SourceType(AbstractSourceType): ...
-class Bankcard(AbstractBankcard): ...
+class Transaction(AbstractTransaction):
+    id: int
+
+class Source(AbstractSource):
+    id: int
+
+class SourceType(AbstractSourceType):
+    id: int
+
+class Bankcard(AbstractBankcard):
+    id: int

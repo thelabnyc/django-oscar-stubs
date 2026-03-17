@@ -5,7 +5,14 @@ from oscar.apps.analytics.abstract_models import (
     AbstractUserSearch,
 )
 
-class ProductRecord(AbstractProductRecord): ...
-class UserRecord(AbstractUserRecord): ...
-class UserProductView(AbstractUserProductView): ...
-class UserSearch(AbstractUserSearch): ...
+class ProductRecord(AbstractProductRecord):
+    id: int
+
+class UserRecord(AbstractUserRecord):
+    id: int
+
+class UserProductView(AbstractUserProductView):
+    id: int
+
+class UserSearch(AbstractUserSearch):
+    id: int

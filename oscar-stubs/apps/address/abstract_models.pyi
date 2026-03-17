@@ -1,8 +1,10 @@
 from typing import Any, ClassVar
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from oscar.apps.partner.abstract_models import AbstractPartner
 from oscar.models.fields import NullCharField, UppercaseCharField
 
 class AbstractAddress(models.Model):
@@ -26,7 +28,8 @@ class AbstractAddress(models.Model):
     line4: models.CharField[str | int | Combinable, str]
     state: models.CharField[str | int | Combinable, str]
     postcode: UppercaseCharField
-    country: ForeignKey[Any | Combinable, Any]
+    country: ForeignKey[AbstractCountry | Combinable, AbstractCountry]
+    country_id: int
     search_text: models.TextField[str | Combinable, str]
 
     search_fields: ClassVar[list[str]]
@@ -51,6 +54,7 @@ class AbstractAddress(models.Model):
     def join_fields(self, fields: list[str] | tuple[str, ...], separator: str = ...) -> str: ...
     def populate_alternative_model(self, address_model: models.Model) -> None: ...
     def active_address_fields(self) -> list[str]: ...
+    def get_title_display(self) -> str: ...
 
     class Meta:
         abstract: bool
@@ -92,7 +96,8 @@ class AbstractShippingAddress(AbstractAddress):
         verbose_name_plural: str
 
 class AbstractUserAddress(AbstractShippingAddress):
-    user: ForeignKey[Any | Combinable, Any]
+    user: ForeignKey[User | Combinable, User]
+    user_id: int
     is_default_for_shipping: models.BooleanField[bool | Combinable, bool]
     is_default_for_billing: models.BooleanField[bool | Combinable, bool]
     num_orders_as_shipping_address: models.PositiveIntegerField[float | int | str | Combinable, int]
@@ -123,7 +128,8 @@ class AbstractBillingAddress(AbstractAddress):
         verbose_name_plural: str
 
 class AbstractPartnerAddress(AbstractAddress):
-    partner: ForeignKey[Any | Combinable, Any]
+    partner: ForeignKey[AbstractPartner | Combinable, AbstractPartner]
+    partner_id: int
 
     class Meta:
         abstract: bool

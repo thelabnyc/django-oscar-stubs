@@ -44,11 +44,11 @@ class AbstractWeightBased(AbstractBase):
 
     def calculate(self, basket: Any) -> Price: ...
     def get_charge(self, weight: Decimal) -> Decimal: ...
-    def get_band_for_weight(self, weight: Decimal) -> Any: ...
+    def get_band_for_weight(self, weight: Decimal) -> AbstractWeightBand | None: ...
     @property
     def num_bands(self) -> int: ...
     @property
-    def top_band(self) -> Any: ...
+    def top_band(self) -> AbstractWeightBand | None: ...
 
     class Meta(AbstractBase.Meta):
         abstract: bool
@@ -57,7 +57,8 @@ class AbstractWeightBased(AbstractBase):
         verbose_name_plural: str
 
 class AbstractWeightBand(models.Model):
-    method: ForeignKey[Any | Combinable, Any]
+    method: ForeignKey[AbstractWeightBased | Combinable, AbstractWeightBased]
+    method_id: int
     upper_limit: models.DecimalField[str | float | Decimal | Combinable, Decimal]
     charge: models.DecimalField[str | float | Decimal | Combinable, Decimal]
 

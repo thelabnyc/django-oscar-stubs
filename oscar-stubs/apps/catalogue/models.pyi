@@ -44,15 +44,37 @@ from oscar.apps.catalogue.product_attributes import (
     ProductAttributesContainer as ProductAttributesContainer,
 )
 
-class ProductClass(AbstractProductClass): ...
-class Category(AbstractCategory): ...
-class ProductCategory(AbstractProductCategory): ...
-class Product(AbstractProduct): ...
-class ProductRecommendation(AbstractProductRecommendation): ...
-class ProductAttribute(AbstractProductAttribute): ...
-class ProductAttributeValue(AbstractProductAttributeValue): ...
-class AttributeOptionGroup(AbstractAttributeOptionGroup): ...
-class AttributeOption(AbstractAttributeOption): ...
-class Option(AbstractOption): ...
-class ProductImage(AbstractProductImage): ...
+class ProductClass(AbstractProductClass):
+    id: int
+
+class Category(AbstractCategory):
+    id: int
+
+class ProductCategory(AbstractProductCategory):
+    id: int
+
+class Product(AbstractProduct):
+    id: int
+
+class ProductRecommendation(AbstractProductRecommendation):
+    id: int
+
+class ProductAttribute(AbstractProductAttribute):
+    id: int
+
+class ProductAttributeValue(AbstractProductAttributeValue):
+    id: int
+
+class AttributeOptionGroup(AbstractAttributeOptionGroup):
+    id: int
+
+class AttributeOption(AbstractAttributeOption):
+    id: int
+
+class Option(AbstractOption):
+    id: int
+
+class ProductImage(AbstractProductImage):
+    id: int
+
 class ProductCategoryHierarchy(AbstractProductCategoryHierarchy): ...

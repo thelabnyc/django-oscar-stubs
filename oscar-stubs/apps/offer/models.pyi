@@ -35,12 +35,23 @@ from oscar.apps.offer.results import (
     ShippingDiscount as ShippingDiscount,
 )
 
-class ConditionalOffer(AbstractConditionalOffer): ...
-class Benefit(AbstractBenefit): ...
-class Condition(AbstractCondition): ...
-class Range(AbstractRange): ...
-class RangeProduct(AbstractRangeProduct): ...
-class RangeProductFileUpload(AbstractRangeProductFileUpload): ...
+class ConditionalOffer(AbstractConditionalOffer):
+    id: int
+
+class Benefit(AbstractBenefit):
+    id: int
+
+class Condition(AbstractCondition):
+    id: int
+
+class Range(AbstractRange):
+    id: int
+
+class RangeProduct(AbstractRangeProduct):
+    id: int
+
+class RangeProductFileUpload(AbstractRangeProductFileUpload):
+    id: int
 
 # Benefit proxy classes (from oscar.apps.offer.benefits)
 

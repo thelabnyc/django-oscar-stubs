@@ -2,8 +2,10 @@ from typing import Any, ClassVar
 import datetime
 
 from django.contrib.auth import models as auth_models
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class UserManager(auth_models.BaseUserManager["AbstractUser"]):
     def create_user(self, email: str, password: str | None = ..., **extra_fields: Any) -> AbstractUser: ...
@@ -34,8 +36,10 @@ class AbstractUser(auth_models.AbstractBaseUser, auth_models.PermissionsMixin):
     def save(self, *args: Any, **kwargs: Any) -> None: ...
 
 class AbstractProductAlert(models.Model):
-    product: models.ForeignKey[Any | Combinable, Any]
-    user: models.ForeignKey[Any | Combinable | None, Any | None]
+    product: models.ForeignKey[AbstractProduct | None | Combinable, AbstractProduct | None]
+    product_id: int
+    user: models.ForeignKey[User | None | Combinable, User | None]
+    user_id: int | None
     email: models.EmailField[str | Combinable, str]
     key: models.CharField[str | Combinable, str]
 
@@ -77,3 +81,4 @@ class AbstractProductAlert(models.Model):
     def get_random_key(self) -> str: ...
     def get_confirm_url(self) -> str: ...
     def get_cancel_url(self) -> str: ...
+    def get_status_display(self) -> str: ...

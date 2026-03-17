@@ -1,8 +1,10 @@
 from typing import Any, ClassVar
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class AbstractWishList(models.Model):
     PUBLIC: ClassVar[str]
@@ -10,7 +12,8 @@ class AbstractWishList(models.Model):
     SHARED: ClassVar[str]
     VISIBILITY_CHOICES: ClassVar[tuple[tuple[str, str], ...]]
 
-    owner: ForeignKey[Any | Combinable, Any]
+    owner: ForeignKey[User | Combinable, User]
+    owner_id: int
     name: models.CharField[str | int | Combinable, str]
     key: models.CharField[str | int | Combinable, str]
     visibility: models.CharField[str | int | Combinable, str]
@@ -26,6 +29,7 @@ class AbstractWishList(models.Model):
     def get_shared_url(self) -> str: ...
     @property
     def is_shareable(self) -> bool: ...
+    def get_visibility_display(self) -> str: ...
 
     class Meta:
         abstract: bool
@@ -34,8 +38,10 @@ class AbstractWishList(models.Model):
         verbose_name: str
 
 class AbstractLine(models.Model):
-    wishlist: ForeignKey[Any | Combinable, Any]
-    product: ForeignKey[Any | None | Combinable, Any | None]
+    wishlist: ForeignKey[AbstractWishList | Combinable, AbstractWishList]
+    wishlist_id: int
+    product: ForeignKey[AbstractProduct | None | Combinable, AbstractProduct | None]
+    product_id: int | None
     quantity: models.PositiveIntegerField[float | int | str | Combinable, int]
     title: models.CharField[str | int | Combinable, str]
 
@@ -49,7 +55,8 @@ class AbstractLine(models.Model):
         verbose_name: str
 
 class AbstractWishListSharedEmail(models.Model):
-    wishlist: ForeignKey[Any | Combinable, Any]
+    wishlist: ForeignKey[AbstractWishList | Combinable, AbstractWishList]
+    wishlist_id: int
     email: models.EmailField[str | Combinable, str]
 
     class Meta:

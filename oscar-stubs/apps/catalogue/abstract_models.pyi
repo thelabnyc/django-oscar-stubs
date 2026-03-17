@@ -21,7 +21,7 @@ class AbstractProductClass(models.Model):
     slug: AutoSlugField
     requires_shipping: models.BooleanField
     track_stock: models.BooleanField
-    options: models.ManyToManyField[Any, Any]
+    options: models.ManyToManyField[AbstractOption, AbstractOption]
 
     class Meta:
         abstract: bool
@@ -83,8 +83,10 @@ class AbstractCategory(MP_Node):
     def get_num_children(self) -> int: ...
 
 class AbstractProductCategory(models.Model):
-    product: models.ForeignKey[Any | Combinable, Any]
-    category: models.ForeignKey[Any | Combinable, Any]
+    product: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    product_id: int
+    category: models.ForeignKey[AbstractCategory | Combinable, AbstractCategory]
+    category_id: int
 
     class Meta:
         abstract: bool
@@ -104,20 +106,22 @@ class AbstractProduct(models.Model):
     is_public: models.BooleanField
     upc: NullCharField
     parent: models.ForeignKey[AbstractProduct | None | Combinable, AbstractProduct | None]
+    parent_id: int | None
     title: models.CharField
     slug: SlugField
     description: models.TextField
     meta_title: models.CharField
     meta_description: models.TextField
     priority: models.SmallIntegerField
-    product_class: models.ForeignKey[Any | None | Combinable, Any | None]
-    attributes: models.ManyToManyField[Any, Any]
-    product_options: models.ManyToManyField[Any, Any]
-    recommended_products: models.ManyToManyField[Any, Any]
+    product_class: models.ForeignKey[AbstractProductClass | None | Combinable, AbstractProductClass | None]
+    product_class_id: int | None
+    attributes: models.ManyToManyField[AbstractProductAttribute, AbstractProductAttribute]
+    product_options: models.ManyToManyField[AbstractOption, AbstractOption]
+    recommended_products: models.ManyToManyField[AbstractProduct, AbstractProduct]
     rating: models.FloatField
     date_created: models.DateTimeField
     date_updated: models.DateTimeField
-    categories: models.ManyToManyField[Any, Any]
+    categories: models.ManyToManyField[AbstractCategory, AbstractCategory]
     is_discountable: models.BooleanField
     code: models.CharField
 
@@ -148,7 +152,7 @@ class AbstractProduct(models.Model):
     def is_child(self) -> bool: ...
     def can_be_parent(self, give_reason: bool = ...) -> bool | tuple[bool, str | None]: ...
     @property
-    def options(self) -> models.QuerySet[Any]: ...
+    def options(self) -> models.QuerySet[AbstractOption]: ...
     @cached_property
     def has_options(self) -> bool: ...
     @property
@@ -163,13 +167,15 @@ class AbstractProduct(models.Model):
     def get_meta_title(self) -> str: ...
     def get_meta_description(self) -> str: ...
     def get_product_class(self) -> AbstractProductClass | None: ...
-    def get_public_children(self) -> models.QuerySet[AbstractProduct] | list[Any]: ...
+    def get_public_children(self) -> models.QuerySet[AbstractProduct] | list[AbstractProduct]: ...
     def get_is_discountable(self) -> bool: ...
-    def get_categories(self) -> models.QuerySet[AbstractCategory] | list[Any]: ...
-    def get_attribute_values(self) -> models.QuerySet[Any] | list[Any]: ...
+    def get_categories(self) -> models.QuerySet[AbstractCategory] | list[AbstractCategory]: ...
+    def get_attribute_values(
+        self,
+    ) -> models.QuerySet[AbstractProductAttributeValue] | list[AbstractProductAttributeValue]: ...
     def get_missing_image(self) -> MissingProductImage: ...
-    def get_all_images(self) -> models.QuerySet[Any]: ...
-    def primary_image(self) -> Any: ...
+    def get_all_images(self) -> models.QuerySet[AbstractProductImage]: ...
+    def primary_image(self) -> AbstractProductImage | object: ...
     def update_rating(self) -> None: ...
     def calculate_rating(self) -> float | None: ...
     def has_review_by(self, user: User) -> bool: ...
@@ -177,11 +183,14 @@ class AbstractProduct(models.Model):
     @cached_property
     def num_approved_reviews(self) -> int: ...
     @property
-    def sorted_recommended_products(self) -> list[Any]: ...
+    def sorted_recommended_products(self) -> list[AbstractProduct]: ...
+    def get_structure_display(self) -> str: ...
 
 class AbstractProductRecommendation(models.Model):
-    primary: models.ForeignKey[Any | Combinable, Any]
-    recommendation: models.ForeignKey[Any | Combinable, Any]
+    primary: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    primary_id: int
+    recommendation: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    recommendation_id: int
     ranking: models.PositiveSmallIntegerField
 
     class Meta:
@@ -193,7 +202,8 @@ class AbstractProductRecommendation(models.Model):
         verbose_name_plural: str
 
 class AbstractProductAttribute(models.Model):
-    product_class: models.ForeignKey[Any | None | Combinable, Any | None]
+    product_class: models.ForeignKey[AbstractProductClass | None | Combinable, AbstractProductClass | None]
+    product_class_id: int | None
     name: models.CharField
     code: models.SlugField
 
@@ -212,7 +222,10 @@ class AbstractProductAttribute(models.Model):
     TYPE_CHOICES: ClassVar[tuple[tuple[str, str], ...]]
 
     type: models.CharField
-    option_group: models.ForeignKey[Any | None | Combinable, Any | None]
+    option_group: models.ForeignKey[
+        AbstractAttributeOptionGroup | None | Combinable, AbstractAttributeOptionGroup | None
+    ]
+    option_group_id: int | None
     required: models.BooleanField
 
     class Meta:
@@ -251,10 +264,13 @@ class AbstractProductAttribute(models.Model):
     def _validate_option(self, value: Any, valid_values: Any = ...) -> None: ...
     def _validate_file(self, value: Any) -> None: ...
     _validate_image: Any
+    def get_type_display(self) -> str: ...
 
 class AbstractProductAttributeValue(models.Model):
-    attribute: models.ForeignKey[Any | Combinable, Any]
-    product: models.ForeignKey[Any | Combinable, Any]
+    attribute: models.ForeignKey[AbstractProductAttribute | Combinable, AbstractProductAttribute]
+    attribute_id: int
+    product: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    product_id: int
     value_text: models.TextField
     value_integer: models.IntegerField
     value_boolean: models.BooleanField
@@ -262,12 +278,14 @@ class AbstractProductAttributeValue(models.Model):
     value_richtext: models.TextField
     value_date: models.DateField
     value_datetime: models.DateTimeField
-    value_multi_option: models.ManyToManyField[Any, Any]
-    value_option: models.ForeignKey[Any | None | Combinable, Any | None]
+    value_multi_option: models.ManyToManyField[AbstractAttributeOption, AbstractAttributeOption]
+    value_option: models.ForeignKey[AbstractAttributeOption | None | Combinable, AbstractAttributeOption | None]
+    value_option_id: int | None
     value_file: models.FileField
     value_image: models.ImageField
     value_entity: GenericForeignKey
     entity_content_type: models.ForeignKey[ContentType | None | Combinable, ContentType | None]
+    entity_content_type_id: int | None
     entity_object_id: models.PositiveIntegerField
     _dirty: bool
 
@@ -320,7 +338,8 @@ class AbstractAttributeOptionGroup(models.Model):
     def option_summary(self) -> str: ...
 
 class AbstractAttributeOption(models.Model):
-    group: models.ForeignKey[Any | Combinable, Any]
+    group: models.ForeignKey[AbstractAttributeOptionGroup | Combinable, AbstractAttributeOptionGroup]
+    group_id: int
     option: models.CharField
     code: NullCharField
 
@@ -350,7 +369,10 @@ class AbstractOption(models.Model):
     code: AutoSlugField
     type: models.CharField
     required: models.BooleanField
-    option_group: models.ForeignKey[Any | None | Combinable, Any | None]
+    option_group: models.ForeignKey[
+        AbstractAttributeOptionGroup | None | Combinable, AbstractAttributeOptionGroup | None
+    ]
+    option_group_id: int | None
     help_text: models.CharField
     order: models.IntegerField
 
@@ -365,6 +387,7 @@ class AbstractOption(models.Model):
     def add_empty_choice(self, choices: list[tuple[Any, str]]) -> list[tuple[Any, str]]: ...
     def get_choices(self) -> list[tuple[Any, str]]: ...
     def clean(self) -> None: ...
+    def get_type_display(self) -> str: ...
 
     class Meta:
         abstract: bool
@@ -379,7 +402,8 @@ class MissingProductImage:
     def symlink_missing_image(self, media_file_path: str) -> None: ...
 
 class AbstractProductImage(models.Model):
-    product: models.ForeignKey[Any | Combinable, Any]
+    product: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
+    product_id: int
     code: NullCharField
     original: models.ImageField
     caption: models.CharField
