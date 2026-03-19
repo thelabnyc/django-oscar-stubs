@@ -1,3 +1,9 @@
+## v4.1.0b0 (2026-03-19)
+
+### Fix
+
+- stub tweaks from integration testing
+
 ## v4.1.0a6 (2026-03-19)
 
 ### Fix
