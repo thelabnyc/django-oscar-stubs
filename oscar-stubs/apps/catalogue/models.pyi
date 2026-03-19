@@ -1,3 +1,6 @@
+from typing import ClassVar
+
+from django.db import models
 from oscar.apps.catalogue.abstract_models import (
     AbstractAttributeOption as AbstractAttributeOption,
 )
@@ -49,12 +52,14 @@ class ProductClass(AbstractProductClass):
 
 class Category(AbstractCategory):
     id: int
+    objects: ClassVar[models.Manager[Category]]  # type: ignore[assignment]
 
 class ProductCategory(AbstractProductCategory):
     id: int
 
 class Product(AbstractProduct):
     id: int
+    objects: ClassVar[models.Manager[Product]]  # type: ignore[assignment]
 
 class ProductRecommendation(AbstractProductRecommendation):
     id: int

@@ -1,6 +1,6 @@
 from collections.abc import Iterator, ValuesView
 from decimal import Decimal
-from typing import Any, ClassVar, TypedDict
+from typing import Any, ClassVar, NotRequired, TypedDict
 
 class OfferApplication(TypedDict):
     offer: Any
@@ -10,6 +10,7 @@ class OfferApplication(TypedDict):
     voucher: Any
     freq: int
     discount: Decimal
+    message: NotRequired[str]
 
 class OfferApplications:
     applications: dict[int, OfferApplication]
@@ -17,7 +18,7 @@ class OfferApplications:
     def __init__(self) -> None: ...
     def __iter__(self) -> Iterator[OfferApplication]: ...
     def __len__(self) -> int: ...
-    def add(self, offer: Any, result: ApplicationResult) -> None: ...
+    def add(self, offer: Any, result: Any) -> None: ...
     @property
     def offer_discounts(self) -> list[OfferApplication]: ...
     @property

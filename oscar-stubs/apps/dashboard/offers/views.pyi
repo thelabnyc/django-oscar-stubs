@@ -2,8 +2,10 @@ from typing import Any
 
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.utils.functional import _StrPromise
 from django.views.generic import DeleteView, ListView
 from oscar.apps.dashboard.offers.wizard_views import OfferWizardStepView
+from oscar.views import sort_queryset as sort_queryset
 
 class OfferListView(ListView):
     context_object_name: str
@@ -12,7 +14,7 @@ class OfferListView(ListView):
     paginate_by: int
     form: Any
     advanced_form: Any
-    search_filters: list[str]
+    search_filters: list[str | _StrPromise]
     def get_queryset(self) -> QuerySet[Any]: ...
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]: ...
 

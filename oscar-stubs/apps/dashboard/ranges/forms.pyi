@@ -1,7 +1,10 @@
 from typing import Any
+import re
 
 from django import forms
 from django.db.models import QuerySet
+
+UPC_SET_REGEX: re.Pattern[str]
 
 class RangeForm(forms.ModelForm):
     class Meta:

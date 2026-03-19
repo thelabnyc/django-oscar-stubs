@@ -1,6 +1,6 @@
+from collections.abc import Sequence
 from typing import Any
 
-from django.db.models import QuerySet
 from django.http import HttpResponse
 from oscar.apps.dashboard.reports.reports import (
     ReportCSVFormatter,
@@ -10,7 +10,7 @@ from oscar.apps.dashboard.reports.reports import (
 
 class VoucherReportCSVFormatter(ReportCSVFormatter):
     filename_template: str
-    def generate_csv(self, response: HttpResponse, vouchers: QuerySet[Any]) -> None: ...
+    def generate_csv(self, response: HttpResponse, vouchers: Sequence[Any]) -> None: ...
 
 class VoucherReportHTMLFormatter(ReportHTMLFormatter):
     filename_template: str

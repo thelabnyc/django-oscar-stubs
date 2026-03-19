@@ -290,14 +290,12 @@ oscar.apps.offer.queryset
 oscar.apps.offer.receivers
 oscar.apps.offer.views
 oscar.apps.order.admin.*
-oscar.apps.order.exceptions
 oscar.apps.order.mixins
 oscar.apps.order.reports
 oscar.apps.partner.exceptions
 oscar.apps.partner.importers
 oscar.apps.partner.receivers
 oscar.apps.partner.views
-oscar.apps.payment.admin
 oscar.apps.payment.bankcards
 oscar.apps.payment.forms
 oscar.apps.search.context_processors
@@ -659,7 +657,6 @@ oscar.apps.dashboard.permissions.User
 oscar.apps.dashboard.ranges.forms.Product
 oscar.apps.dashboard.ranges.forms.Range
 oscar.apps.dashboard.ranges.forms.RangeProductFileUpload
-oscar.apps.dashboard.ranges.forms.UPC_SET_REGEX
 oscar.apps.dashboard.ranges.views.Product
 oscar.apps.dashboard.ranges.views.Range
 oscar.apps.dashboard.ranges.views.RangeCreateView.model
@@ -903,6 +900,30 @@ oscar.apps.wishlists.models.WishList.lines
 oscar.apps.wishlists.models.WishList.shared_emails
 oscar.apps.wishlists.models.WishListSharedEmail.id
 oscar.apps.wishlists.models.__all__
+
+# =============================================================================
+# Section 12: Stubs intentionally wider than runtime for extensibility
+#
+# These methods are given broader signatures in the stubs to support downstream
+# projects (e.g. django-oscar-bluelight) that override them with additional
+# parameters. The runtime code accepts **kwargs so these extra params are safe.
+# =============================================================================
+oscar.apps.offer.abstract_models.AbstractBenefit.apply
+oscar.apps.offer.benefits.PercentageDiscountBenefit.apply
+oscar.apps.offer.benefits.AbsoluteDiscountBenefit.apply
+oscar.apps.offer.benefits.FixedUnitDiscountBenefit.apply
+oscar.apps.offer.benefits.FixedPriceBenefit.apply
+oscar.apps.offer.benefits.MultibuyDiscountBenefit.apply
+oscar.apps.offer.benefits.ShippingBenefit.apply
+oscar.apps.offer.models.AbstractBenefit.apply
+oscar.apps.offer.models.PercentageDiscountBenefit.apply
+oscar.apps.offer.models.AbsoluteDiscountBenefit.apply
+oscar.apps.offer.models.FixedUnitDiscountBenefit.apply
+oscar.apps.offer.models.FixedPriceBenefit.apply
+oscar.apps.offer.models.MultibuyDiscountBenefit.apply
+oscar.apps.offer.models.ShippingBenefit.apply
+oscar.apps.voucher.abstract_models.AbstractVoucher.record_usage
+oscar.apps.voucher.abstract_models.AbstractVoucher.record_discount
 
 # =============================================================================
 # Stub-only types (typing Protocols/TypedDicts that don't exist at runtime)
