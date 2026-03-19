@@ -1,6 +1,7 @@
 from typing import Any
 
 from django.urls import URLPattern, URLResolver
+from django.views import View
 from oscar.core.application import OscarDashboardConfig
 
 class UsersDashboardConfig(OscarDashboardConfig):
@@ -10,12 +11,12 @@ class UsersDashboardConfig(OscarDashboardConfig):
     default_permissions: list[str]
     permissions_map: dict[str, Any]
 
-    index_view: type
-    user_detail_view: type
-    password_reset_view: type
-    alert_list_view: type
-    alert_update_view: type
-    alert_delete_view: type
+    index_view: type[View]
+    user_detail_view: type[View]
+    password_reset_view: type[View]
+    alert_list_view: type[View]
+    alert_update_view: type[View]
+    alert_delete_view: type[View]
 
     def configure_permissions(self) -> None: ...
     def ready(self) -> None: ...

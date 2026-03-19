@@ -303,7 +303,6 @@ oscar.apps.order.admin.*
 oscar.apps.order.exceptions
 oscar.apps.order.mixins
 oscar.apps.order.reports
-oscar.apps.order.signals
 oscar.apps.partner.admin
 oscar.apps.partner.exceptions
 oscar.apps.partner.importers

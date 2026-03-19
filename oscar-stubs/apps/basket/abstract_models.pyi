@@ -25,7 +25,7 @@ class AbstractBasket(models.Model):
     editable_statuses: ClassVar[tuple[str, ...]]
 
     # Fields
-    owner: models.ForeignKey[User | Combinable, User | None]
+    owner: models.ForeignKey[User | Combinable | None, User | None]
     owner_id: int | None
     status: models.CharField[str | Combinable, str]
     vouchers: models.ManyToManyField[AbstractVoucher, AbstractVoucher]

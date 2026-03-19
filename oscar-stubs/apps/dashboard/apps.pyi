@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 from django.urls import URLPattern, URLResolver
+from django.views import View
 from oscar.core.application import OscarDashboardConfig
 
 class DashboardConfig(OscarDashboardConfig):
@@ -9,8 +10,8 @@ class DashboardConfig(OscarDashboardConfig):
     namespace: str
     permissions_map: dict[str, tuple[list[str], ...]]
 
-    index_view: type
-    login_view: type
+    index_view: type[View]
+    login_view: type[View]
     catalogue_app: AppConfig
     reports_app: AppConfig
     orders_app: AppConfig

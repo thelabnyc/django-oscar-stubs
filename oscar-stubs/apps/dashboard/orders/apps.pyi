@@ -1,6 +1,7 @@
 from typing import Any
 
 from django.urls import URLPattern, URLResolver
+from django.views import View
 from oscar.core.application import OscarDashboardConfig
 
 class OrdersDashboardConfig(OscarDashboardConfig):
@@ -10,11 +11,11 @@ class OrdersDashboardConfig(OscarDashboardConfig):
     default_permissions: list[str]
     permissions_map: dict[str, Any]
 
-    order_list_view: type
-    order_detail_view: type
-    shipping_address_view: type
-    line_detail_view: type
-    order_stats_view: type
+    order_list_view: type[View]
+    order_detail_view: type[View]
+    shipping_address_view: type[View]
+    line_detail_view: type[View]
+    order_stats_view: type[View]
 
     def configure_permissions(self) -> None: ...
     def ready(self) -> None: ...
