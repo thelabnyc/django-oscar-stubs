@@ -20,9 +20,20 @@ import os
 import re
 import sys
 
-from mypy.nodes import Import, ImportAll, ImportFrom, ListExpr, MypyFile, StrExpr, TupleExpr, TypeInfo
+from mypy.nodes import (
+    GDEF,
+    Import,
+    ImportAll,
+    ImportFrom,
+    ListExpr,
+    MypyFile,
+    StrExpr,
+    SymbolTableNode,
+    TupleExpr,
+    TypeInfo,
+)
 from mypy.options import Options
-from mypy.plugin import AttributeContext, FunctionContext, Plugin
+from mypy.plugin import AttributeContext, DynamicClassDefContext, FunctionContext, Plugin
 from mypy.types import AnyType, Instance, TupleType, Type, TypeOfAny, TypeType, UnionType, get_proper_type
 
 # ──────────────────────────────────────────────────────────────────────
@@ -558,6 +569,68 @@ def _get_classes_hook(ctx: FunctionContext, *, plugin: OscarPlugin) -> Type:
 
 
 # ──────────────────────────────────────────────────────────────────────
+# Dynamic class hooks (semantic analysis phase)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _create_type_info_ref(ctx: DynamicClassDefContext, instance: Type) -> None:
+    """Add a direct TypeInfo reference to the symbol table.
+
+    Instead of creating a TypeAlias, we add the resolved TypeInfo directly,
+    which is equivalent to what ``from module import ClassName`` does.
+    This avoids Var/TypeAlias conflicts during mypy re-analysis.
+    """
+    proper = get_proper_type(instance)
+    if not isinstance(proper, Instance):
+        return
+
+    type_info = proper.type
+
+    # Check if already set up correctly
+    existing = ctx.api.lookup_qualified(ctx.name, ctx.call)
+    if existing is not None and existing.node is type_info:
+        return
+
+    ctx.api.add_symbol_table_node(ctx.name, SymbolTableNode(GDEF, type_info))
+
+
+def _get_model_dynamic_class_hook(ctx: DynamicClassDefContext, *, plugin: OscarPlugin) -> None:
+    """Handle Model = get_model('app_label', 'ModelName') as a type alias."""
+    if len(ctx.call.args) < 2:
+        return
+
+    app_label_expr = ctx.call.args[0]
+    model_name_expr = ctx.call.args[1]
+
+    if not isinstance(app_label_expr, StrExpr) or not isinstance(model_name_expr, StrExpr):
+        return
+
+    instance = _resolve_model(app_label_expr.value, model_name_expr.value, plugin)
+    if instance is not None:
+        _create_type_info_ref(ctx, instance)
+    elif not ctx.api.final_iteration:
+        ctx.api.defer()
+
+
+def _get_class_dynamic_class_hook(ctx: DynamicClassDefContext, *, plugin: OscarPlugin) -> None:
+    """Handle Cls = get_class('module_label', 'ClassName') as a type alias."""
+    if len(ctx.call.args) < 2:
+        return
+
+    module_label_expr = ctx.call.args[0]
+    classname_expr = ctx.call.args[1]
+
+    if not isinstance(module_label_expr, StrExpr) or not isinstance(classname_expr, StrExpr):
+        return
+
+    instance = _resolve_class(module_label_expr.value, classname_expr.value, plugin)
+    if instance is not None:
+        _create_type_info_ref(ctx, instance)
+    elif not ctx.api.final_iteration:
+        ctx.api.defer()
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Plugin class
 # ──────────────────────────────────────────────────────────────────────
 
@@ -582,7 +655,7 @@ class OscarPlugin(Plugin):
         that all stubbed oscar modules AND any forked override modules are
         loaded so that type lookup succeeds in hooks.
         """
-        from mypy.build import PRI_MYPY
+        from mypy.build import PRI_HIGH
 
         has_oscar_import = False
         for imp in file.imports:
@@ -599,13 +672,14 @@ class OscarPlugin(Plugin):
 
         deps: list[tuple[int, str, int]] = []
 
-        # Oscar stub modules
+        # Oscar stub modules — use PRI_HIGH so they're available before
+        # the first semantic analysis pass of the importing module.
         for mod in sorted(self._stubbed_modules):
-            deps.append((PRI_MYPY, mod, -1))
+            deps.append((PRI_HIGH, mod, -1))
 
         # Forked app modules (especially their models)
         for override_module in sorted(self._app_overrides.values()):
-            deps.append((PRI_MYPY, f"{override_module}.models", -1))
+            deps.append((PRI_HIGH, f"{override_module}.models", -1))
 
         return deps
 
@@ -615,6 +689,14 @@ class OscarPlugin(Plugin):
         class_fullname, _, _ = fullname.rpartition(".")
         if _is_oscar_abstract_model(class_fullname):
             return partial(_remap_abstract_attr_hook, plugin=self)
+        return None
+
+    def get_dynamic_class_hook(self, fullname: str) -> Callable[[DynamicClassDefContext], None] | None:
+        """Handle Name = get_model/get_class(...) assignments as type aliases."""
+        if fullname == _OSCAR_GET_MODEL:
+            return partial(_get_model_dynamic_class_hook, plugin=self)
+        if fullname == _OSCAR_GET_CLASS:
+            return partial(_get_class_dynamic_class_hook, plugin=self)
         return None
 
     def get_function_hook(self, fullname: str) -> Callable[[FunctionContext], Type] | None:

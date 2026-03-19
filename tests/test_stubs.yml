@@ -9,7 +9,7 @@
   main: |
     from oscar.core.loading import get_model
     Order = get_model('order', 'Order')
-    reveal_type(Order)  # N: Revealed type is "type[oscar.apps.order.models.Order]"
+    reveal_type(Order)  # N: Revealed type is "def (*args: Any, **kwargs: Any) -> oscar.apps.order.models.Order"
 
 - case: get_model_resolves_basket
   mypy_config: |
@@ -22,7 +22,7 @@
   main: |
     from oscar.core.loading import get_model
     Basket = get_model('basket', 'Basket')
-    reveal_type(Basket)  # N: Revealed type is "type[oscar.apps.basket.models.Basket]"
+    reveal_type(Basket)  # N: Revealed type is "def (*args: Any, **kwargs: Any) -> oscar.apps.basket.models.Basket"
 
 - case: get_model_resolves_partner
   mypy_config: |
@@ -35,7 +35,7 @@
   main: |
     from oscar.core.loading import get_model
     Partner = get_model('partner', 'Partner')
-    reveal_type(Partner)  # N: Revealed type is "type[oscar.apps.partner.models.Partner]"
+    reveal_type(Partner)  # N: Revealed type is "def (*args: Any, **kwargs: Any) -> oscar.apps.partner.models.Partner"
 
 - case: get_model_resolves_reviews_app_label
   mypy_config: |
@@ -48,7 +48,7 @@
   main: |
     from oscar.core.loading import get_model
     ProductReview = get_model('reviews', 'ProductReview')
-    reveal_type(ProductReview)  # N: Revealed type is "type[oscar.apps.catalogue.reviews.models.ProductReview]"
+    reveal_type(ProductReview)  # N: Revealed type is "def (*args: Any, **kwargs: Any) -> oscar.apps.catalogue.reviews.models.ProductReview"
 
 - case: get_class_resolves_form
   mypy_config: |
@@ -61,7 +61,7 @@
   main: |
     from oscar.core.loading import get_class
     UserAddressForm = get_class('address.forms', 'UserAddressForm')
-    reveal_type(UserAddressForm)  # N: Revealed type is "type[oscar.apps.address.forms.UserAddressForm]"
+    reveal_type(UserAddressForm)  # N: Revealed type is "def (user: Any, *args: Any, **kwargs: Any) -> oscar.apps.address.forms.UserAddressForm"
 
 - case: get_class_resolves_customer_form
   mypy_config: |
@@ -74,7 +74,7 @@
   main: |
     from oscar.core.loading import get_class
     EmailAuthenticationForm = get_class('customer.forms', 'EmailAuthenticationForm')
-    reveal_type(EmailAuthenticationForm)  # N: Revealed type is "type[oscar.apps.customer.forms.EmailAuthenticationForm]"
+    reveal_type(EmailAuthenticationForm)  # N: Revealed type is "def (host: builtins.str, *args: Any, **kwargs: Any) -> oscar.apps.customer.forms.EmailAuthenticationForm"
 
 - case: get_classes_resolves_tuple
   mypy_config: |

@@ -13,6 +13,7 @@ from oscar.apps.voucher.abstract_models import AbstractVoucher
 from oscar.models.fields.slugfield import SlugField
 
 class AbstractBasket(models.Model):
+    id: int
     # Status constants
     OPEN: ClassVar[str]
     MERGED: ClassVar[str]
@@ -141,6 +142,7 @@ class AbstractBasket(models.Model):
     def get_status_display(self) -> str: ...
 
 class AbstractLine(models.Model):
+    id: int
     # Fields
     basket: models.ForeignKey[AbstractBasket | Combinable, AbstractBasket]
     basket_id: int

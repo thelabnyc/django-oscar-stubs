@@ -299,7 +299,7 @@ oscar.apps.offer.receivers
 oscar.apps.offer.reports
 oscar.apps.offer.utils
 oscar.apps.offer.views
-oscar.apps.order.admin
+oscar.apps.order.admin.*
 oscar.apps.order.exceptions
 oscar.apps.order.mixins
 oscar.apps.order.reports
@@ -910,3 +910,8 @@ oscar.apps.wishlists.models.WishList.lines
 oscar.apps.wishlists.models.WishList.shared_emails
 oscar.apps.wishlists.models.WishListSharedEmail.id
 oscar.apps.wishlists.models.__all__
+
+# =============================================================================
+# Stub-only types (typing Protocols that don't exist at runtime)
+# =============================================================================
+oscar.core.prices.PriceLike
