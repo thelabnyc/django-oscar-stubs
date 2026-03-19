@@ -1,5 +1,6 @@
 from typing import Any, ClassVar
 
+from django.contrib.auth.models import AbstractBaseUser
 from django.http import HttpRequest
 
 class OrderNumberGenerator:
@@ -12,7 +13,7 @@ class OrderCreator:
         total: Any,
         shipping_method: Any,
         shipping_charge: Any,
-        user: Any | None = ...,
+        user: AbstractBaseUser | None = ...,
         shipping_address: Any | None = ...,
         billing_address: Any | None = ...,
         order_number: str | None = ...,
@@ -23,7 +24,7 @@ class OrderCreator:
     ) -> Any: ...
     def create_order_model(
         self,
-        user: Any,
+        user: AbstractBaseUser | None,
         basket: Any,
         shipping_address: Any | None,
         shipping_method: Any,
@@ -46,7 +47,7 @@ class OrderCreator:
     def create_line_attributes(self, order: Any, order_line: Any, basket_line: Any) -> None: ...
     def create_discount_model(self, order: Any, discount: dict[str, Any]) -> None: ...
     def record_discount(self, discount: dict[str, Any]) -> None: ...
-    def record_voucher_usage(self, order: Any, voucher: Any, user: Any) -> None: ...
+    def record_voucher_usage(self, order: Any, voucher: Any, user: AbstractBaseUser) -> None: ...
 
 class OrderDispatcher:
     ORDER_PLACED_EVENT_CODE: ClassVar[str]
