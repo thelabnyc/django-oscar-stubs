@@ -1,0 +1,3 @@
+from django.contrib import admin
+
+class StockRecordAdmin(admin.ModelAdmin): ...

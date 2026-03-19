@@ -8,6 +8,7 @@ from django.db.models.expressions import Combinable
 from django.db.models.lookups import StartsWith
 from django.utils.functional import cached_property
 from oscar.apps.catalogue.product_attributes import ProductAttributesContainer
+from oscar.apps.partner.abstract_models import AbstractStockRecord
 from oscar.models.fields import AutoSlugField, NullCharField
 from oscar.models.fields.slugfield import SlugField
 from treebeard.mp_tree import MP_Node
@@ -124,6 +125,10 @@ class AbstractProduct(models.Model):
     categories: models.ManyToManyField[AbstractCategory, AbstractCategory]
     is_discountable: models.BooleanField
     code: models.CharField
+
+    # Reverse relations
+    children: models.Manager[AbstractProduct]
+    stockrecords: models.Manager[AbstractStockRecord]
 
     attr: ProductAttributesContainer
 

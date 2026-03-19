@@ -10,7 +10,6 @@ oscar.core.logging
 oscar.core.logging.*
 oscar.management
 oscar.management.*
-oscar.templatetags
 oscar.templatetags.*
 oscar.test
 oscar.test.*
@@ -240,17 +239,14 @@ oscar.apps.analytics.admin
 oscar.apps.analytics.receivers
 oscar.apps.analytics.reports
 oscar.apps.analytics.scores
-oscar.apps.basket.admin
 oscar.apps.basket.formsets
 oscar.apps.basket.middleware
 oscar.apps.basket.reports
 oscar.apps.basket.signals
-oscar.apps.basket.utils
 oscar.apps.basket.views
 oscar.apps.catalogue.admin
 oscar.apps.catalogue.categories
 oscar.apps.catalogue.exceptions
-oscar.apps.catalogue.expressions
 oscar.apps.catalogue.receivers
 oscar.apps.catalogue.reviews.admin
 oscar.apps.catalogue.reviews.forms
@@ -285,25 +281,18 @@ oscar.apps.customer.wishlists.views
 oscar.apps.dashboard.catalogue.models
 oscar.apps.dashboard.communications.models
 oscar.apps.dashboard.models
-oscar.apps.dashboard.offers.models
-oscar.apps.dashboard.ranges.models
 oscar.apps.dashboard.reports.models
 oscar.apps.dashboard.reviews.models
 oscar.apps.offer.admin
-oscar.apps.offer.benefits
-oscar.apps.offer.conditions
 oscar.apps.offer.custom
 oscar.apps.offer.managers
 oscar.apps.offer.queryset
 oscar.apps.offer.receivers
-oscar.apps.offer.reports
-oscar.apps.offer.utils
 oscar.apps.offer.views
 oscar.apps.order.admin.*
 oscar.apps.order.exceptions
 oscar.apps.order.mixins
 oscar.apps.order.reports
-oscar.apps.partner.admin
 oscar.apps.partner.exceptions
 oscar.apps.partner.importers
 oscar.apps.partner.receivers
@@ -324,7 +313,6 @@ oscar.apps.search.views.search
 oscar.apps.shipping.admin
 oscar.apps.voucher.admin
 oscar.apps.voucher.receivers
-oscar.apps.voucher.reports
 oscar.apps.voucher.utils
 oscar.apps.wishlists.admin
 oscar.apps.wishlists.forms
@@ -333,7 +321,6 @@ oscar.apps.wishlists.views
 oscar.checks
 oscar.core.ajax
 oscar.core.context_processors
-oscar.views.generic
 
 # =============================================================================
 # Section 11: Other differences between stubs and runtime
@@ -341,6 +328,10 @@ oscar.views.generic
 # These need individual auditing and should be resolved one by one.
 # =============================================================================
 oscar.apps.address.forms.UserAddress
+oscar.apps.basket.admin.Line
+oscar.apps.basket.admin.LineInline.model
+oscar.apps.basket.utils.Applicator
+oscar.apps.basket.utils.ConditionalOffer
 oscar.apps.address.models.Country.billingaddress_set
 oscar.apps.address.models.Country.orderanditemcharges_set
 oscar.apps.address.models.Country.partneraddress_set
@@ -358,7 +349,6 @@ oscar.apps.basket.abstract_models.AbstractBasket.objects
 oscar.apps.basket.abstract_models.AbstractBasket.open
 oscar.apps.basket.abstract_models.AbstractBasket.saved
 oscar.apps.basket.abstract_models.LineDiscountRegistry
-oscar.apps.basket.abstract_models.OfferApplications
 oscar.apps.basket.abstract_models.Unavailable
 oscar.apps.basket.forms.Basket
 oscar.apps.basket.forms.Line
@@ -580,7 +570,6 @@ oscar.apps.dashboard.catalogue.views.ProductDeleteView.model
 oscar.apps.dashboard.catalogue.views.ProductForm
 oscar.apps.dashboard.catalogue.views.ProductImage
 oscar.apps.dashboard.catalogue.views.ProductImageFormSet
-oscar.apps.dashboard.catalogue.views.ProductLookupView.model
 oscar.apps.dashboard.catalogue.views.ProductRecommendationFormSet
 oscar.apps.dashboard.catalogue.views.ProductSearchForm
 oscar.apps.dashboard.catalogue.views.ProductTable
@@ -792,6 +781,8 @@ oscar.apps.offer.models.ConditionalOffer.in_combination
 oscar.apps.offer.models.ConditionalOffer.vouchers
 oscar.apps.offer.models.PostOrderAction.description
 oscar.apps.offer.models.Range.benefit_set
+oscar.apps.offer.reports.ConditionalOffer
+oscar.apps.offer.reports.OrderDiscount
 oscar.apps.offer.models.Range.condition_set
 oscar.apps.offer.models.Range.file_uploads
 oscar.apps.offer.models.Range.id
@@ -860,6 +851,8 @@ oscar.apps.order.utils.Order
 oscar.apps.order.utils.OrderDiscount
 oscar.apps.order.utils.OrderLineDiscount
 oscar.apps.order.utils.Surcharge
+oscar.apps.partner.admin.Partner
+oscar.apps.partner.admin.StockRecord
 oscar.apps.partner.models.Partner.addresses
 oscar.apps.partner.models.Partner.id
 oscar.apps.partner.models.Partner.order_lines
@@ -903,6 +896,7 @@ oscar.apps.voucher.models.VoucherApplication.id
 oscar.apps.voucher.models.VoucherSet.id
 oscar.apps.voucher.models.VoucherSet.vouchers
 oscar.apps.voucher.models.__all__
+oscar.apps.voucher.reports.Voucher
 oscar.apps.wishlists.models.Line.id
 oscar.apps.wishlists.models.WishList.id
 oscar.apps.wishlists.models.WishList.lines
@@ -911,6 +905,7 @@ oscar.apps.wishlists.models.WishListSharedEmail.id
 oscar.apps.wishlists.models.__all__
 
 # =============================================================================
-# Stub-only types (typing Protocols that don't exist at runtime)
+# Stub-only types (typing Protocols/TypedDicts that don't exist at runtime)
 # =============================================================================
+oscar.apps.offer.results.OfferApplication
 oscar.core.prices.PriceLike
