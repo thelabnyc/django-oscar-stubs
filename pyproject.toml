@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-oscar-stubs"
-version = "4.1.0a1"
+version = "4.1.0a2"
 description = "PEP 561 type stubs for django-oscar"
 readme = "README.md"
 license = { text = "ISC" }
