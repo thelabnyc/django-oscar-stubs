@@ -1,6 +1,15 @@
 from decimal import Decimal
+from typing import Protocol
 
 class TaxNotKnown(Exception): ...
+
+class PriceLike(Protocol):
+    @property
+    def excl_tax(self) -> Decimal: ...
+    @property
+    def incl_tax(self) -> Decimal | None: ...
+    @property
+    def is_tax_known(self) -> bool: ...
 
 class Price:
     currency: str
