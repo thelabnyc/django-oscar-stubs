@@ -1,3 +1,9 @@
+## v4.1.0a3 (2026-03-18)
+
+### Fix
+
+- add dynamic class hooks for get_model/get_class and improve stubs
+
 ## v4.1.0a2 (2026-03-18)
 
 ### Feat
