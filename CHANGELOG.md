@@ -1,3 +1,9 @@
+## v4.1.0b1 (2026-03-19)
+
+### Fix
+
+- loosen benefit.apply types
+
 ## v4.1.0b0 (2026-03-19)
 
 ### Fix
