@@ -11,15 +11,15 @@ class OrderPlacementMixin(CheckoutSessionMixin):
     view_signal: Any
 
     # Payment handling methods
-    def handle_payment(self, order_number: str, total: Price, **kwargs: Any) -> None: ...
+    def handle_payment(self, order_number: str | int, total: Price, **kwargs: Any) -> None: ...
     def add_payment_source(self, source: Any) -> None: ...
     def add_payment_event(self, event_type_name: str, amount: Decimal, reference: str = ...) -> None: ...
 
     # Placing order methods
-    def generate_order_number(self, basket: Any) -> str: ...
+    def generate_order_number(self, basket: Any) -> str | int: ...
     def handle_order_placement(
         self,
-        order_number: str,
+        order_number: str | int,
         user: Any,
         basket: Any,
         shipping_address: Any,
@@ -32,7 +32,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
     ) -> HttpResponse: ...
     def place_order(
         self,
-        order_number: str,
+        order_number: str | int,
         user: Any,
         basket: Any,
         shipping_address: Any,

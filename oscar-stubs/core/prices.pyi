@@ -20,7 +20,7 @@ class Price:
     tax: Decimal
     def __init__(
         self,
-        currency: str,
+        currency: str | None,
         excl_tax: Decimal,
         incl_tax: Decimal | None = ...,
         tax: Decimal | None = ...,

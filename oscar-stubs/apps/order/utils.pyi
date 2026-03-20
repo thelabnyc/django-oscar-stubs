@@ -5,7 +5,7 @@ from django.http import HttpRequest
 from oscar.apps.offer.results import OfferApplication
 
 class OrderNumberGenerator:
-    def order_number(self, basket: Any) -> str: ...
+    def order_number(self, basket: Any) -> str | int: ...
 
 class OrderCreator:
     def place_order(
@@ -14,10 +14,10 @@ class OrderCreator:
         total: Any,
         shipping_method: Any,
         shipping_charge: Any,
-        user: AbstractBaseUser | None = ...,
+        user: AbstractBaseUser | AnonymousUser | None = ...,
         shipping_address: Any | None = ...,
         billing_address: Any | None = ...,
-        order_number: str | None = ...,
+        order_number: str | int | None = ...,
         status: str | None = ...,
         request: HttpRequest | None = ...,
         surcharges: list[Any] | None = ...,
@@ -25,14 +25,14 @@ class OrderCreator:
     ) -> Any: ...
     def create_order_model(
         self,
-        user: AbstractBaseUser | None,
+        user: AbstractBaseUser | AnonymousUser | None,
         basket: Any,
         shipping_address: Any | None,
         shipping_method: Any,
         shipping_charge: Any,
         billing_address: Any | None,
         total: Any,
-        order_number: str,
+        order_number: str | int,
         status: str | None,
         request: HttpRequest | None = ...,
         surcharges: list[Any] | None = ...,
