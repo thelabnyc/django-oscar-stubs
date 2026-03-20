@@ -1,3 +1,13 @@
+## v4.1.0b2 (2026-03-20)
+
+### Feat
+
+- add missing stubs and enhance mypy plugin
+
+### Fix
+
+- correct types from MonkeyType runtime analysis
+
 ## v4.1.0b1 (2026-03-19)
 
 ### Fix
