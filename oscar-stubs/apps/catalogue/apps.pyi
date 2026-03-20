@@ -1,11 +1,12 @@
 from django.apps import AppConfig
 from django.urls import URLPattern, URLResolver
+from django.utils.functional import _StrPromise
 from oscar.core.application import OscarConfig
 
 class CatalogueOnlyConfig(OscarConfig):
     label: str
     name: str
-    verbose_name: str
+    verbose_name: str | _StrPromise
     namespace: str
     detail_view: type
     catalogue_view: type
@@ -17,7 +18,7 @@ class CatalogueOnlyConfig(OscarConfig):
 class CatalogueReviewsOnlyConfig(OscarConfig):
     label: str
     name: str
-    verbose_name: str
+    verbose_name: str | _StrPromise
     reviews_app: AppConfig
     def ready(self) -> None: ...
     def get_urls(self) -> list[URLPattern | URLResolver]: ...

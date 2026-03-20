@@ -3,6 +3,7 @@ from typing import Any, ClassVar
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.catalogue.abstract_models import AbstractProduct
 from oscar.models.fields import NullCharField
 
@@ -31,12 +32,12 @@ class AbstractProductReview(models.Model):
     objects: ClassVar[models.Manager[AbstractProductReview]]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        unique_together: tuple[tuple[str, str], ...]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        unique_together: ClassVar[tuple[tuple[str, str], ...]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def get_absolute_url(self) -> str: ...
     def clean(self) -> None: ...
@@ -77,12 +78,12 @@ class AbstractVote(models.Model):
     date_created: models.DateTimeField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        unique_together: tuple[tuple[str, str], ...]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        unique_together: ClassVar[tuple[tuple[str, str], ...]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def clean(self) -> None: ...
     def save(self, *args: Any, **kwargs: Any) -> None: ...

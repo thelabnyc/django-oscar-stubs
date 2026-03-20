@@ -4,6 +4,7 @@ import csv
 import types
 
 from django.db import models
+from django.http import HttpResponse
 
 AUTH_USER_MODEL: str
 AUTH_USER_APP_LABEL: str
@@ -22,7 +23,7 @@ class UnicodeCSVWriter:
     def __init__(
         self,
         filename: str | None = ...,
-        open_file: IO[str] | None = ...,
+        open_file: IO[str] | HttpResponse | None = ...,
         dialect: type[csv.Dialect] = ...,
         encoding: str = ...,
         **kw: Any,

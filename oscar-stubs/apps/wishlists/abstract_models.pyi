@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class AbstractWishList(models.Model):
@@ -32,10 +33,10 @@ class AbstractWishList(models.Model):
     def get_visibility_display(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: tuple[str, ...]
-        verbose_name: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[tuple[str, ...]]
+        verbose_name: ClassVar[str | _StrPromise]
 
 class AbstractLine(models.Model):
     wishlist: ForeignKey[AbstractWishList | Combinable, AbstractWishList]
@@ -48,11 +49,11 @@ class AbstractLine(models.Model):
     def get_title(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        unique_together: tuple[tuple[str, str], ...]
-        verbose_name: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        unique_together: ClassVar[tuple[tuple[str, str], ...]]
+        verbose_name: ClassVar[str | _StrPromise]
 
 class AbstractWishListSharedEmail(models.Model):
     wishlist: ForeignKey[AbstractWishList | Combinable, AbstractWishList]
@@ -60,6 +61,6 @@ class AbstractWishListSharedEmail(models.Model):
     email: models.EmailField[str | Combinable, str]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]

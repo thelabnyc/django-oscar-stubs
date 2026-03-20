@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.partner.abstract_models import AbstractPartner
 from oscar.models.fields import NullCharField, UppercaseCharField
 
@@ -57,9 +58,9 @@ class AbstractAddress(models.Model):
     def get_title_display(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractCountry(models.Model):
     iso_3166_1_a2: models.CharField[str | int | Combinable, str]
@@ -76,11 +77,11 @@ class AbstractCountry(models.Model):
     def numeric_code(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
-        ordering: tuple[str, ...]
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
+        ordering: ClassVar[tuple[str, ...]]
 
 class AbstractShippingAddress(AbstractAddress):
     phone_number: Any  # PhoneNumberField
@@ -90,10 +91,10 @@ class AbstractShippingAddress(AbstractAddress):
     def order(self) -> Any: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractUserAddress(AbstractShippingAddress):
     user: ForeignKey[User | Combinable, User]
@@ -110,29 +111,29 @@ class AbstractUserAddress(AbstractShippingAddress):
     def validate_unique(self, exclude: Any = ...) -> None: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
-        ordering: list[str]
-        unique_together: tuple[str, ...]
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
+        ordering: ClassVar[list[str]]
+        unique_together: ClassVar[tuple[str, ...]]
 
 class AbstractBillingAddress(AbstractAddress):
     @property
     def order(self) -> Any: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractPartnerAddress(AbstractAddress):
     partner: ForeignKey[AbstractPartner | Combinable, AbstractPartner]
     partner_id: int
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

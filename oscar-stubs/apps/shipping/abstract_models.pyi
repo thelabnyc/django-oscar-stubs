@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 from django.db import models
 from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.core.prices import Price
 from oscar.models.fields import AutoSlugField
 
@@ -18,11 +19,11 @@ class AbstractBase(models.Model):
     def discount(self, basket: Any) -> Decimal: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractOrderAndItemCharges(AbstractBase):
     price_per_order: models.DecimalField[str | float | Decimal | Combinable, Decimal]
@@ -32,10 +33,10 @@ class AbstractOrderAndItemCharges(AbstractBase):
     def calculate(self, basket: Any) -> Price: ...
 
     class Meta(AbstractBase.Meta):
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractWeightBased(AbstractBase):
     weight_attribute: ClassVar[str]
@@ -51,10 +52,10 @@ class AbstractWeightBased(AbstractBase):
     def top_band(self) -> AbstractWeightBand | None: ...
 
     class Meta(AbstractBase.Meta):
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractWeightBand(models.Model):
     method: ForeignKey[AbstractWeightBased | Combinable, AbstractWeightBased]
@@ -68,8 +69,8 @@ class AbstractWeightBand(models.Model):
     def weight_to(self) -> Decimal: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

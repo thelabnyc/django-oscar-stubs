@@ -17,7 +17,7 @@ from oscar.apps.voucher.abstract_models import AbstractVoucher
 
 class BaseOfferMixin(models.Model):
     class Meta:
-        abstract: bool
+        abstract: ClassVar[bool]
 
     def proxy(self) -> Self: ...
     @property
@@ -80,11 +80,11 @@ class AbstractConditionalOffer(models.Model):
     _voucher: Any
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def save(self, *args: Any, **kwargs: Any) -> None: ...
     def get_absolute_url(self) -> str: ...
@@ -142,10 +142,10 @@ class AbstractBenefit(BaseOfferMixin, models.Model):
     offers: models.Manager[AbstractConditionalOffer]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     @property
     def proxy_map(self) -> dict[str, builtins.type]: ...
@@ -192,10 +192,10 @@ class AbstractCondition(BaseOfferMixin, models.Model):
     offers: models.Manager[AbstractConditionalOffer]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     @property
     def proxy_map(self) -> dict[str, builtins.type]: ...
@@ -240,11 +240,11 @@ class AbstractRange(models.Model):
     browsable: ClassVar[models.Manager[AbstractRange]]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def get_absolute_url(self) -> str: ...
     @property
@@ -270,9 +270,9 @@ class AbstractRangeProduct(models.Model):
     display_order: models.IntegerField[int | Combinable, int]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        unique_together: tuple[str, ...]
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        unique_together: ClassVar[tuple[str, ...]]
 
 class AbstractRangeProductFileUpload(models.Model):
     range: models.ForeignKey[AbstractRange | Combinable, AbstractRange]
@@ -302,11 +302,11 @@ class AbstractRangeProductFileUpload(models.Model):
     num_duplicate_skus: models.PositiveIntegerField[int | Combinable | None, int | None]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: tuple[str, ...]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[tuple[str, ...]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def mark_as_failed(self, message: str | None = ...) -> None: ...
     def mark_as_processed(self, num_new: int, num_unknown: int, num_duplicate: int) -> None: ...

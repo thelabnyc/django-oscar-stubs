@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.expressions import Combinable
 from django.db.models.lookups import StartsWith
-from django.utils.functional import cached_property
+from django.utils.functional import _StrPromise, cached_property
 from oscar.apps.catalogue.product_attributes import ProductAttributesContainer
 from oscar.apps.partner.abstract_models import AbstractStockRecord
 from oscar.models.fields import AutoSlugField, NullCharField
@@ -25,11 +25,11 @@ class AbstractProductClass(models.Model):
     options: models.ManyToManyField[AbstractOption, AbstractOption]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     @property
     def has_attributes(self) -> bool: ...
@@ -74,11 +74,11 @@ class AbstractCategory(MP_Node):
     def get_absolute_url(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def has_children(self) -> bool: ...
     def get_num_children(self) -> int: ...
@@ -90,12 +90,12 @@ class AbstractProductCategory(models.Model):
     category_id: int
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        unique_together: tuple[str, str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        unique_together: ClassVar[tuple[str, str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractProduct(models.Model):
     STANDALONE: ClassVar[str]
@@ -135,11 +135,11 @@ class AbstractProduct(models.Model):
     objects: ClassVar[models.Manager[AbstractProduct]]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...
     def get_absolute_url(self) -> str: ...
@@ -199,12 +199,12 @@ class AbstractProductRecommendation(models.Model):
     ranking: models.PositiveSmallIntegerField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        unique_together: tuple[str, str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        unique_together: ClassVar[tuple[str, str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractProductAttribute(models.Model):
     product_class: models.ForeignKey[AbstractProductClass | None | Combinable, AbstractProductClass | None]
@@ -234,12 +234,12 @@ class AbstractProductAttribute(models.Model):
     required: models.BooleanField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
-        unique_together: tuple[str, str]
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
+        unique_together: ClassVar[tuple[str, str]]
 
     @property
     def is_option(self) -> bool: ...
@@ -305,11 +305,11 @@ class AbstractProductAttributeValue(models.Model):
     def is_dirty(self) -> bool: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        unique_together: tuple[str, str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        unique_together: ClassVar[tuple[str, str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def summary(self) -> str: ...
     @property
@@ -334,10 +334,10 @@ class AbstractAttributeOptionGroup(models.Model):
     code: NullCharField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     @property
     def option_summary(self) -> str: ...
@@ -349,11 +349,11 @@ class AbstractAttributeOption(models.Model):
     code: NullCharField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        unique_together: tuple[str, str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        unique_together: ClassVar[tuple[str, str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractOption(models.Model):
     TEXT: ClassVar[str]
@@ -395,11 +395,11 @@ class AbstractOption(models.Model):
     def get_type_display(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class MissingProductImage:
     name: str
@@ -416,11 +416,11 @@ class AbstractProductImage(models.Model):
     date_created: models.DateTimeField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def is_primary(self) -> bool: ...
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]: ...
@@ -431,9 +431,9 @@ class AbstractProductCategoryHierarchy(models.Model):
     category_id: models.IntegerField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
-        db_table: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
+        db_table: ClassVar[str]
         managed: bool

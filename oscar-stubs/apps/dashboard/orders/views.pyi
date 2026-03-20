@@ -1,7 +1,7 @@
 from typing import Any
 
 from django.db.models import QuerySet
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseBase, HttpResponseRedirect
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 from oscar.views.generic import BulkEditMixin
 
@@ -26,7 +26,7 @@ class OrderListView(BulkEditMixin, ListView):
     CSV_COLUMNS: dict[str, str]
     base_queryset: QuerySet[Any]
     form: Any
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse: ...
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase: ...
     def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse: ...
     def get_queryset(self) -> QuerySet[Any]: ...
     def get_search_filter_descriptions(self) -> list[str]: ...

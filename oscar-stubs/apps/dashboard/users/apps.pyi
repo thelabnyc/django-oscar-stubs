@@ -1,13 +1,14 @@
 from typing import Any
 
 from django.urls import URLPattern, URLResolver
+from django.utils.functional import _StrPromise
 from django.views import View
 from oscar.core.application import OscarDashboardConfig
 
 class UsersDashboardConfig(OscarDashboardConfig):
     label: str
     name: str
-    verbose_name: str
+    verbose_name: str | _StrPromise
     default_permissions: list[str]
     permissions_map: dict[str, Any]
 

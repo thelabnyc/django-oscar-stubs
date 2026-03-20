@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, ClassVar
@@ -5,6 +6,7 @@ from typing import Any, ClassVar
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.basket.managers import OpenBasketManager, SavedBasketManager
 from oscar.apps.catalogue.abstract_models import AbstractOption, AbstractProduct
 from oscar.apps.offer.abstract_models import AbstractConditionalOffer
@@ -46,8 +48,8 @@ class AbstractBasket(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     # Strategy property
     @property
@@ -80,7 +82,7 @@ class AbstractBasket(models.Model):
 
     # Helper methods
     def _create_line_reference(
-        self, product: AbstractProduct, stockrecord: AbstractStockRecord, options: list[dict[str, Any]]
+        self, product: AbstractProduct, stockrecord: AbstractStockRecord, options: Sequence[dict[str, Any]]
     ) -> str: ...
     def _get_total(self, model_property: str) -> Decimal: ...
 
@@ -168,8 +170,8 @@ class AbstractLine(models.Model):
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
         unique_together: ClassVar[tuple[str, ...]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def save(self, *args: Any, **kwargs: Any) -> None: ...
 
@@ -241,5 +243,5 @@ class AbstractLineAttribute(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

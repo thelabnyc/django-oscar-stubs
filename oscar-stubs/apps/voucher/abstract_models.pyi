@@ -6,6 +6,7 @@ from django.contrib.auth.models import AbstractBaseUser, AnonymousUser, User
 from django.db import models
 from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.basket.abstract_models import AbstractBasket
 from oscar.apps.offer.abstract_models import AbstractBenefit, AbstractConditionalOffer
 from oscar.apps.offer.results import OfferApplication
@@ -31,12 +32,12 @@ class AbstractVoucherSet(models.Model):
     def total_discount(self) -> Decimal | None: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
         get_latest_by: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractVoucher(models.Model):
     SINGLE_USE: ClassVar[str]
@@ -72,12 +73,12 @@ class AbstractVoucher(models.Model):
     def get_usage_display(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
         get_latest_by: str
-        verbose_name: str
-        verbose_name_plural: str
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractVoucherApplication(models.Model):
     voucher: ForeignKey[AbstractVoucher | Combinable, AbstractVoucher]
@@ -89,8 +90,8 @@ class AbstractVoucherApplication(models.Model):
     date_created: models.DateTimeField[str | Combinable, Any]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

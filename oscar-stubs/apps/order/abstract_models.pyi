@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.db import models
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.address.abstract_models import AbstractBillingAddress, AbstractShippingAddress
 from oscar.apps.basket.abstract_models import AbstractBasket
 from oscar.apps.catalogue.abstract_models import AbstractOption, AbstractProduct
@@ -49,8 +50,8 @@ class AbstractOrder(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def save(self, *args: Any, **kwargs: Any) -> None: ...
 
@@ -134,8 +135,8 @@ class AbstractOrderNote(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def is_editable(self) -> bool: ...
 
@@ -149,8 +150,8 @@ class AbstractOrderStatusChange(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         ordering: ClassVar[list[str]]
 
 class AbstractCommunicationEvent(models.Model):
@@ -163,8 +164,8 @@ class AbstractCommunicationEvent(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         ordering: ClassVar[list[str]]
 
 class AbstractLine(models.Model):
@@ -202,8 +203,8 @@ class AbstractLine(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     # Status methods
     @classmethod
@@ -260,8 +261,8 @@ class AbstractLineAttribute(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractLinePrice(models.Model):
     order: models.ForeignKey[AbstractOrder | Combinable, AbstractOrder]
@@ -279,8 +280,8 @@ class AbstractLinePrice(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[tuple[str, ...]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractPaymentEventType(models.Model):
     name: models.CharField[str | Combinable, str]
@@ -289,8 +290,8 @@ class AbstractPaymentEventType(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         ordering: ClassVar[tuple[str, ...]]
 
 class AbstractPaymentEvent(models.Model):
@@ -308,8 +309,8 @@ class AbstractPaymentEvent(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         ordering: ClassVar[list[str]]
 
     def num_affected_lines(self) -> int: ...
@@ -324,8 +325,8 @@ class PaymentEventQuantity(models.Model):
 
     class Meta:
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         unique_together: ClassVar[tuple[str, ...]]
 
 class AbstractShippingEvent(models.Model):
@@ -340,8 +341,8 @@ class AbstractShippingEvent(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         ordering: ClassVar[list[str]]
 
     def num_affected_lines(self) -> int: ...
@@ -356,8 +357,8 @@ class ShippingEventQuantity(models.Model):
 
     class Meta:
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         unique_together: ClassVar[tuple[str, ...]]
 
     def save(self, *args: Any, **kwargs: Any) -> None: ...
@@ -369,8 +370,8 @@ class AbstractShippingEventType(models.Model):
     class Meta:
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
         ordering: ClassVar[tuple[str, ...]]
 
 class AbstractOrderDiscount(models.Model):
@@ -396,8 +397,8 @@ class AbstractOrderDiscount(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def save(self, *args: Any, **kwargs: Any) -> None: ...
     def get_category_display(self) -> str: ...
@@ -425,8 +426,8 @@ class AbstractOrderLineDiscount(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractSurcharge(models.Model):
     order: models.ForeignKey[AbstractOrder | Combinable, AbstractOrder]
@@ -444,5 +445,5 @@ class AbstractSurcharge(models.Model):
         abstract: ClassVar[bool]
         app_label: ClassVar[str]
         ordering: ClassVar[list[str]]
-        verbose_name: ClassVar[str]
-        verbose_name_plural: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

@@ -1,6 +1,9 @@
 from typing import Any
 
 from django import forms
+from oscar.apps.order.abstract_models import AbstractOrder
+
+Order: type[AbstractOrder]
 
 class OrderStatsForm(forms.Form):
     date_from: forms.DateField

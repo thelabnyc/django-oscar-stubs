@@ -22,6 +22,7 @@ import sys
 
 from mypy.nodes import (
     GDEF,
+    FuncDef,
     Import,
     ImportAll,
     ImportFrom,
@@ -33,8 +34,15 @@ from mypy.nodes import (
     TypeInfo,
 )
 from mypy.options import Options
-from mypy.plugin import AttributeContext, DynamicClassDefContext, FunctionContext, Plugin
-from mypy.types import AnyType, Instance, TupleType, Type, TypeOfAny, TypeType, UnionType, get_proper_type
+from mypy.plugin import (
+    AttributeContext,
+    ClassDefContext,
+    DynamicClassDefContext,
+    FunctionContext,
+    MethodContext,
+    Plugin,
+)
+from mypy.types import AnyType, CallableType, Instance, TupleType, Type, TypeOfAny, TypeType, UnionType, get_proper_type
 
 # ──────────────────────────────────────────────────────────────────────
 # Oscar app label → default oscar module path (relative to oscar.apps)
@@ -131,9 +139,16 @@ def _get_django_settings_module(options: Options) -> str | None:
     if not options.config_file:
         return None
 
+    config_file = options.config_file
+
+    # Handle pyproject.toml (TOML format)
+    if config_file.endswith(".toml"):
+        return _read_settings_from_toml(config_file)
+
+    # Handle INI-format files (mypy.ini, setup.cfg, etc.)
     config = configparser.ConfigParser()
     try:
-        config.read(options.config_file)
+        config.read(config_file)
     except (configparser.Error, OSError):
         return None
 
@@ -142,6 +157,30 @@ def _get_django_settings_module(options: Options) -> str | None:
             val = config.get(section, "django_settings_module", fallback=None)
             if val:
                 return val
+
+    return None
+
+
+def _read_settings_from_toml(config_file: str) -> str | None:
+    """Read django_settings_module from a pyproject.toml file."""
+    try:
+        import tomllib
+
+        with open(config_file, "rb") as f:
+            data = tomllib.load(f)
+
+        # Check [tool.django-stubs] section
+        val = data.get("tool", {}).get("django-stubs", {}).get("django_settings_module")
+        if val:
+            return str(val)
+
+        # Check [tool.mypy_django_plugin] section (alternative config)
+        val = data.get("tool", {}).get("mypy_django_plugin", {}).get("django_settings_module")
+        if val:
+            return str(val)
+
+    except (OSError, Exception):
+        pass
 
     return None
 
@@ -156,35 +195,87 @@ def _find_settings_file(settings_module: str) -> str | None:
     return None
 
 
+def _extract_app_config_strings(tree: ast.AST) -> list[str]:
+    """Extract AppConfig-style string literals from an AST.
+
+    Finds string constants matching ``some.module.apps.ClassName`` that are not
+    from oscar or django (i.e., they are user/third-party app configs).
+    """
+    entries: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            value = node.value
+            if ".apps." in value and not value.startswith("oscar.") and not value.startswith("django."):
+                last_part = value.rsplit(".", 1)[-1]
+                if last_part and last_part[0].isupper():
+                    entries.append(value)
+    return entries
+
+
+def _resolve_import_source(module_name: str, name: str) -> str | None:
+    """Find the source file for a name imported from a module.
+
+    Resolves ``from <module_name> import <name>`` to a filesystem path.
+    """
+    rel_path = module_name.replace(".", os.sep)
+    for path_entry in sys.path:
+        # Try as a package (__init__.py)
+        pkg_path = os.path.join(path_entry, rel_path, "__init__.py")
+        if os.path.isfile(pkg_path):
+            return pkg_path
+        # Try as a module (.py)
+        mod_path = os.path.join(path_entry, rel_path + ".py")
+        if os.path.isfile(mod_path):
+            return mod_path
+    return None
+
+
 def _collect_app_config_entries(settings_file: str) -> list[str]:
     """Collect all AppConfig-style entries from the settings file.
 
-    Scans the entire file for string literals matching the pattern
-    ``some.module.apps.ClassName``. This catches entries in the original
-    INSTALLED_APPS list as well as index-based replacements like::
-
-        idx = INSTALLED_APPS.index("oscar.apps.partner.apps.PartnerConfig")
-        INSTALLED_APPS[idx] = "myproject.partner.apps.PartnerConfig"
+    Scans the settings file for string literals matching the pattern
+    ``some.module.apps.ClassName``. Also follows imported function calls
+    used in INSTALLED_APPS (e.g. ``INSTALLED_APPS = [...] + get_core_apps()``)
+    by scanning the imported module for the same patterns.
 
     Returns only non-oscar entries (entries whose module path does NOT
     start with ``oscar.``).
     """
     try:
         with open(settings_file) as f:
-            tree = ast.parse(f.read())
+            source = f.read()
+            tree = ast.parse(source)
     except (OSError, SyntaxError):
         return []
 
-    entries: list[str] = []
+    # Collect entries directly from the settings file
+    entries = _extract_app_config_strings(tree)
+
+    # Build import map: name → (module, original_name)
+    import_map: dict[str, tuple[str, str]] = {}
     for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            value = node.value
-            # Match pattern: dotted.path.apps.ClassName
-            if ".apps." in value and not value.startswith("oscar.") and not value.startswith("django."):
-                # Heuristic: the part after the last dot should be CamelCase (a class name)
-                last_part = value.rsplit(".", 1)[-1]
-                if last_part and last_part[0].isupper():
-                    entries.append(value)
+        if isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                local_name = alias.asname or alias.name
+                import_map[local_name] = (node.module, alias.name)
+
+    # Find function calls used with INSTALLED_APPS and follow imports.
+    # Handles patterns like:
+    #   INSTALLED_APPS = [...] + get_core_apps()
+    #   INSTALLED_APPS = get_core_apps() + [...]
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            func_name = node.func.id
+            if func_name in import_map:
+                module_name, original_name = import_map[func_name]
+                source_file = _resolve_import_source(module_name, original_name)
+                if source_file:
+                    try:
+                        with open(source_file) as f:
+                            imported_tree = ast.parse(f.read())
+                    except (OSError, SyntaxError):
+                        continue
+                    entries.extend(_extract_app_config_strings(imported_tree))
 
     return entries
 
@@ -331,11 +422,17 @@ def _find_stubbed_modules() -> set[str]:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Abstract → concrete model remapping
+# Oscar type remapping (abstract → concrete, oscar → forked)
 # ──────────────────────────────────────────────────────────────────────
 
 # Pattern: oscar.apps.<path>.abstract_models.Abstract<Name>
 _ABSTRACT_MODEL_RE = re.compile(r"^oscar\.apps\.(.+)\.abstract_models\.Abstract(\w+)$")
+
+# Pattern: oscar.apps.<path>.models.<Name> (concrete models)
+_CONCRETE_MODEL_RE = re.compile(r"^oscar\.apps\.(.+)\.models\.(\w+)$")
+
+# Pattern: oscar.apps.<path>.<submodule>.<Name> (any oscar class, e.g. strategy.PurchaseInfo)
+_OSCAR_CLASS_RE = re.compile(r"^oscar\.apps\.(.+?)\.(\w+)\.(\w+)$")
 
 
 def _is_oscar_abstract_model(fullname: str) -> bool:
@@ -362,43 +459,112 @@ def _resolve_abstract_to_concrete(fullname: str, plugin: OscarPlugin) -> Type | 
     return _resolve_model(app_label, model_name, plugin)
 
 
-def _remap_abstract_type(typ: Type, plugin: OscarPlugin) -> Type:
-    """Recursively walk a type, replacing oscar abstract model instances with concrete ones."""
+def _resolve_concrete_to_forked(fullname: str, plugin: OscarPlugin) -> Type | None:
+    """Resolve an oscar concrete model to its forked equivalent.
+
+    E.g. oscar.apps.catalogue.models.Product → myproject.catalogue.models.Product
+    Only remaps if the app is actually forked.
+    """
+    m = _CONCRETE_MODEL_RE.match(fullname)
+    if m is None:
+        return None
+    oscar_path = m.group(1)  # e.g. "catalogue"
+    model_name = m.group(2)  # e.g. "Product"
+
+    app_label = _OSCAR_PATH_TO_LABEL.get(oscar_path)
+    if app_label is None:
+        return None
+
+    # Only remap if the app is forked
+    override_module = plugin._app_overrides.get(app_label)
+    if not override_module:
+        return None
+
+    return _resolve_type(f"{override_module}.models.{model_name}", plugin)
+
+
+def _resolve_oscar_class_to_forked(fullname: str, plugin: OscarPlugin) -> Type | None:
+    """Resolve any oscar.apps class to its forked equivalent.
+
+    Handles non-model classes like oscar.apps.partner.strategy.PurchaseInfo
+    → myproject.partner.strategy.PurchaseInfo when the app is forked.
+    """
+    m = _OSCAR_CLASS_RE.match(fullname)
+    if m is None:
+        return None
+    oscar_path = m.group(1)  # e.g. "partner"
+    submodule = m.group(2)  # e.g. "strategy"
+    class_name = m.group(3)  # e.g. "PurchaseInfo"
+
+    # Skip abstract_models (handled by _resolve_abstract_to_concrete)
+    if submodule == "abstract_models":
+        return None
+
+    app_label = _OSCAR_PATH_TO_LABEL.get(oscar_path)
+    if app_label is None:
+        return None
+
+    # Only remap if the app is forked
+    override_module = plugin._app_overrides.get(app_label)
+    if not override_module:
+        return None
+
+    return _resolve_type(f"{override_module}.{submodule}.{class_name}", plugin)
+
+
+def _remap_oscar_type(typ: Type, plugin: OscarPlugin) -> Type:
+    """Recursively walk a type, replacing oscar types with forked equivalents.
+
+    Handles:
+    - Abstract models → concrete models (in forked app or oscar default)
+    - Concrete oscar models → forked models (when app is forked)
+    - Other oscar classes → forked equivalents (e.g. strategy classes)
+    """
     typ = get_proper_type(typ)
 
     if isinstance(typ, Instance):
         fullname = typ.type.fullname
-        # If this is an oscar abstract model, resolve to concrete
-        if _is_oscar_abstract_model(fullname):
-            concrete = _resolve_abstract_to_concrete(fullname, plugin)
-            if concrete is not None:
-                concrete = get_proper_type(concrete)
-                # Carry over type args from the original if the concrete has matching params
-                if isinstance(concrete, Instance) and typ.args:
-                    concrete = concrete.copy_modified(args=[_remap_abstract_type(a, plugin) for a in typ.args])
-                return concrete
+        remapped: Type | None = None
 
-        # Even if not abstract itself, remap type args (e.g. QuerySet[AbstractProduct])
+        # Priority 1: abstract model → concrete (handles forked apps)
+        if _is_oscar_abstract_model(fullname):
+            remapped = _resolve_abstract_to_concrete(fullname, plugin)
+
+        # Priority 2: concrete oscar model → forked model
+        if remapped is None:
+            remapped = _resolve_concrete_to_forked(fullname, plugin)
+
+        # Priority 3: any oscar class → forked class
+        if remapped is None:
+            remapped = _resolve_oscar_class_to_forked(fullname, plugin)
+
+        if remapped is not None:
+            remapped = get_proper_type(remapped)
+            if isinstance(remapped, Instance) and typ.args:
+                remapped = remapped.copy_modified(args=[_remap_oscar_type(a, plugin) for a in typ.args])
+            return remapped
+
+        # Even if not remapped itself, remap type args (e.g. QuerySet[AbstractProduct])
         if typ.args:
-            new_args = [_remap_abstract_type(a, plugin) for a in typ.args]
+            new_args = [_remap_oscar_type(a, plugin) for a in typ.args]
             if new_args != list(typ.args):
                 return typ.copy_modified(args=new_args)
 
     elif isinstance(typ, UnionType):
-        new_items = [_remap_abstract_type(item, plugin) for item in typ.items]
+        new_items = [_remap_oscar_type(item, plugin) for item in typ.items]
         if new_items != typ.items:
             return UnionType.make_union(new_items)
 
     return typ
 
 
-def _remap_abstract_attr_hook(ctx: AttributeContext, *, plugin: OscarPlugin) -> Type:
-    """Attribute hook callback: remap abstract model types to concrete ones."""
+def _remap_oscar_attr_hook(ctx: AttributeContext, *, plugin: OscarPlugin) -> Type:
+    """Attribute hook callback: remap oscar types to forked equivalents."""
     # Don't remap setter types — keep abstract (more permissive) for assignments
     if ctx.is_lvalue:
         return ctx.default_attr_type
 
-    return _remap_abstract_type(ctx.default_attr_type, plugin)
+    return _remap_oscar_type(ctx.default_attr_type, plugin)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -631,6 +797,90 @@ def _get_class_dynamic_class_hook(ctx: DynamicClassDefContext, *, plugin: OscarP
 
 
 # ──────────────────────────────────────────────────────────────────────
+# Base class hook: remap return types in oscar strategy superclasses
+# ──────────────────────────────────────────────────────────────────────
+
+# Oscar strategy classes whose method return types should be remapped
+# when a project forks the partner app and redefines PurchaseInfo.
+_STRATEGY_CLASSES = frozenset(
+    {
+        "oscar.apps.partner.strategy.Base",
+        "oscar.apps.partner.strategy.Structured",
+        "oscar.apps.partner.strategy.UseFirstStockRecord",
+        "oscar.apps.partner.strategy.StockRequired",
+        "oscar.apps.partner.strategy.NoTax",
+        "oscar.apps.partner.strategy.FixedRateTax",
+        "oscar.apps.partner.strategy.DeferredTax",
+        "oscar.apps.partner.strategy.Default",
+        "oscar.apps.partner.strategy.UK",
+        "oscar.apps.partner.strategy.US",
+    }
+)
+
+
+def _remap_strategy_base_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
+    """Remap PurchaseInfo return types in oscar strategy base class methods.
+
+    When a forked app redefines PurchaseInfo (common with monkey-patching),
+    this hook updates the base class method signatures so that mypy sees
+    the override return types as compatible.
+
+    During semantic analysis, return types are still UnboundType (not yet
+    resolved). We replace them with the already-resolved forked Instance.
+    """
+    if "partner" not in plugin._app_overrides:
+        return
+
+    forked_module = plugin._app_overrides["partner"]
+    forked_pi = _resolve_type(f"{forked_module}.strategy.PurchaseInfo", plugin)
+    if forked_pi is None:
+        return
+
+    oscar_pi_fullname = "oscar.apps.partner.strategy.PurchaseInfo"
+
+    # Walk the MRO and remap PurchaseInfo in oscar strategy class methods
+    for base_info in ctx.cls.info.mro:
+        if base_info.fullname not in _STRATEGY_CLASSES:
+            continue
+
+        for method_name in ("fetch_for_product", "fetch_for_parent", "fetch_for_line"):
+            sym = base_info.names.get(method_name)
+            if sym is None or sym.type is None:
+                continue
+            # sym.type is read-only; modify the underlying FuncDef node
+            if not isinstance(sym.node, FuncDef):
+                continue
+
+            func_type = sym.node.type
+            if not isinstance(func_type, CallableType):
+                continue
+
+            ret = func_type.ret_type
+            proper_ret = get_proper_type(ret)
+
+            # Handle already-resolved types (Instance)
+            if isinstance(proper_ret, Instance) and proper_ret.type.fullname == oscar_pi_fullname:
+                sym.node.type = func_type.copy_modified(ret_type=forked_pi)
+                continue
+
+            # Handle unresolved types (UnboundType) during semantic analysis.
+            # At this point the return type is still "PurchaseInfo?" — replace
+            # it directly with the resolved forked PurchaseInfo Instance.
+            if hasattr(ret, "name") and getattr(ret, "name", None) == "PurchaseInfo":
+                sym.node.type = func_type.copy_modified(ret_type=forked_pi)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Method hooks: remap return types on oscar method calls
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _remap_method_return_hook(ctx: MethodContext, *, plugin: OscarPlugin) -> Type:
+    """Remap the return type of oscar strategy method calls."""
+    return _remap_oscar_type(ctx.default_return_type, plugin)
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Plugin class
 # ──────────────────────────────────────────────────────────────────────
 
@@ -647,6 +897,19 @@ class OscarPlugin(Plugin):
         super().__init__(options)
         self._stubbed_modules = _find_stubbed_modules()
         self._app_overrides = _detect_forked_apps(options)
+
+    @staticmethod
+    def _module_exists(module_name: str) -> bool:
+        """Check if a Python module can be found on sys.path."""
+        rel_path = module_name.replace(".", os.sep)
+        for path_entry in sys.path:
+            # Check as package (__init__.py)
+            if os.path.isfile(os.path.join(path_entry, rel_path, "__init__.py")):
+                return True
+            # Check as module (.py)
+            if os.path.isfile(os.path.join(path_entry, rel_path + ".py")):
+                return True
+        return False
 
     def get_additional_deps(self, file: MypyFile) -> list[tuple[int, str, int]]:
         """Declare dependencies on oscar app modules.
@@ -677,18 +940,64 @@ class OscarPlugin(Plugin):
         for mod in sorted(self._stubbed_modules):
             deps.append((PRI_HIGH, mod, -1))
 
-        # Forked app modules (especially their models)
+        # Forked app modules — only add deps for modules that actually have
+        # a models submodule (avoid import errors for dashboard apps etc.)
         for override_module in sorted(self._app_overrides.values()):
-            deps.append((PRI_HIGH, f"{override_module}.models", -1))
+            models_mod = f"{override_module}.models"
+            if self._module_exists(models_mod):
+                deps.append((PRI_HIGH, models_mod, -1))
 
         return deps
 
     def get_attribute_hook(self, fullname: str) -> Callable[[AttributeContext], Type] | None:
-        """Remap abstract model types to concrete ones on attribute access."""
+        """Remap oscar types to forked equivalents on attribute access.
+
+        Fires for attribute access on:
+        1. oscar.apps.* classes (abstract and concrete models)
+        2. Forked module classes (so that inherited oscar fields are remapped)
+
+        This ensures that field types (e.g. ForeignKey targets) are remapped
+        to forked app types when the app is forked.
+        """
         # fullname is "some.module.ClassName.attr_name"
         class_fullname, _, _ = fullname.rpartition(".")
-        if _is_oscar_abstract_model(class_fullname):
-            return partial(_remap_abstract_attr_hook, plugin=self)
+        if class_fullname.startswith("oscar.apps."):
+            return partial(_remap_oscar_attr_hook, plugin=self)
+
+        # Also fire for classes in forked modules — these inherit oscar fields
+        # that may reference abstract types needing remapping
+        for override_module in self._app_overrides.values():
+            if class_fullname.startswith(f"{override_module}."):
+                return partial(_remap_oscar_attr_hook, plugin=self)
+
+        return None
+
+    def get_base_class_hook(self, fullname: str) -> Callable[[ClassDefContext], None] | None:
+        """Remap return types in oscar strategy base classes.
+
+        When a class extends an oscar strategy class and the partner app is
+        forked with a custom PurchaseInfo, update the base class method
+        signatures so override return types are compatible.
+        """
+        if fullname in _STRATEGY_CLASSES:
+            return partial(_remap_strategy_base_hook, plugin=self)
+        return None
+
+    def get_method_hook(self, fullname: str) -> Callable[[MethodContext], Type] | None:
+        """Remap oscar types in method call return values.
+
+        Ensures that calling e.g. strategy.fetch_for_product() returns
+        the forked PurchaseInfo type instead of the oscar stub type.
+        """
+        class_fullname, _, _ = fullname.rpartition(".")
+        if class_fullname in _STRATEGY_CLASSES:
+            return partial(_remap_method_return_hook, plugin=self)
+
+        # Also remap for forked strategy classes
+        for override_module in self._app_overrides.values():
+            if class_fullname.startswith(f"{override_module}."):
+                return partial(_remap_method_return_hook, plugin=self)
+
         return None
 
     def get_dynamic_class_hook(self, fullname: str) -> Callable[[DynamicClassDefContext], None] | None:

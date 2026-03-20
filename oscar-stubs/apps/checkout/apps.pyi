@@ -1,12 +1,13 @@
 from typing import Any
 
 from django.urls import URLPattern, URLResolver
+from django.utils.functional import _StrPromise
 from oscar.core.application import OscarConfig
 
 class CheckoutConfig(OscarConfig):
     label: str
     name: str
-    verbose_name: str
+    verbose_name: str | _StrPromise
     namespace: str
     index_view: type
     shipping_address_view: type

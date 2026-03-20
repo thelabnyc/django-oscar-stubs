@@ -1,12 +1,13 @@
 from django.apps import AppConfig
 from django.urls import URLPattern, URLResolver
+from django.utils.functional import _StrPromise
 from django.views import View
 from oscar.core.application import OscarDashboardConfig
 
 class DashboardConfig(OscarDashboardConfig):
     label: str
     name: str
-    verbose_name: str
+    verbose_name: str | _StrPromise
     namespace: str
     permissions_map: dict[str, tuple[list[str], ...]]
 

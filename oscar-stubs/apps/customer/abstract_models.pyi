@@ -5,6 +5,7 @@ from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class UserManager(auth_models.BaseUserManager["AbstractUser"]):
@@ -24,9 +25,9 @@ class AbstractUser(auth_models.AbstractBaseUser, auth_models.PermissionsMixin):
     USERNAME_FIELD: ClassVar[str]
 
     class Meta:
-        abstract: bool
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def clean(self) -> None: ...
     def get_full_name(self) -> str: ...
@@ -57,11 +58,11 @@ class AbstractProductAlert(models.Model):
     date_closed: models.DateTimeField[str | datetime.datetime | Combinable | None, datetime.datetime | None]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     @property
     def is_anonymous(self) -> bool: ...

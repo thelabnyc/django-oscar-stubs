@@ -5,6 +5,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class AbstractPartner(models.Model):
@@ -19,12 +20,12 @@ class AbstractPartner(models.Model):
     def get_address_for_stockrecord(self, stockrecord: Any) -> Any | None: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: tuple[str, ...]
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[tuple[str, ...]]
         permissions: tuple[tuple[str, str], ...]
-        verbose_name: str
-        verbose_name_plural: str
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractStockRecord(models.Model):
     product: models.ForeignKey[AbstractProduct | Combinable, AbstractProduct]
@@ -41,11 +42,11 @@ class AbstractStockRecord(models.Model):
     date_updated: models.DateTimeField[str | datetime.datetime | Combinable, datetime.datetime]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        unique_together: tuple[str, ...]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        unique_together: ClassVar[tuple[str, ...]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     @property
     def net_stock_level(self) -> int: ...
@@ -74,11 +75,11 @@ class AbstractStockAlert(models.Model):
     date_closed: models.DateTimeField[str | datetime.datetime | Combinable | None, datetime.datetime | None]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: tuple[str, ...]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[tuple[str, ...]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
     def close(self) -> None: ...
     def get_status_display(self) -> str: ...

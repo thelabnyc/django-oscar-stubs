@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.communication.managers import CommunicationTypeManager
 from oscar.models.fields import AutoSlugField
 
@@ -17,11 +18,11 @@ class AbstractEmail(models.Model):
     date_sent: models.DateTimeField[str | Combinable, Any]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractCommunicationEventType(models.Model):
     ORDER_RELATED: ClassVar[str]
@@ -51,11 +52,11 @@ class AbstractCommunicationEventType(models.Model):
     def get_category_display(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractNotification(models.Model):
     INBOX: ClassVar[str]
@@ -78,8 +79,8 @@ class AbstractNotification(models.Model):
     def get_location_display(self) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: tuple[str, ...]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[tuple[str, ...]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

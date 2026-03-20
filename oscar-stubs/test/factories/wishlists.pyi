@@ -1,0 +1,3 @@
+import factory
+
+class WishListFactory(factory.django.DjangoModelFactory): ...

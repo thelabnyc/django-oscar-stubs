@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.order.abstract_models import AbstractOrder
 from oscar.models.fields import AutoSlugField
 
@@ -23,11 +24,11 @@ class AbstractTransaction(models.Model):
     date_created: models.DateTimeField[str | Combinable, Any]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractSource(models.Model):
     order: ForeignKey[AbstractOrder | Combinable, AbstractOrder]
@@ -58,22 +59,22 @@ class AbstractSource(models.Model):
     def amount_available_for_refund(self) -> Decimal: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractSourceType(models.Model):
     name: models.CharField[str | int | Combinable, str]
     code: AutoSlugField
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractBankcard(models.Model):
     user: ForeignKey[User | Combinable, User]
@@ -99,7 +100,7 @@ class AbstractBankcard(models.Model):
     def expiry_month(self, format: str = ...) -> str: ...
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]

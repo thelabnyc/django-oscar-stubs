@@ -1,10 +1,11 @@
 from decimal import Decimal
-from typing import Any
+from typing import Any, ClassVar
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.expressions import Combinable
+from django.utils.functional import _StrPromise
 from oscar.apps.catalogue.abstract_models import AbstractProduct
 
 class AbstractProductRecord(models.Model):
@@ -16,11 +17,11 @@ class AbstractProductRecord(models.Model):
     score: models.FloatField[float | int | str | Combinable, float]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractUserRecord(models.Model):
     user: models.OneToOneField[User | Combinable, User]
@@ -34,10 +35,10 @@ class AbstractUserRecord(models.Model):
     date_last_order: models.DateTimeField[str | None | Combinable, Any | None]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractUserProductView(models.Model):
     user: ForeignKey[User | Combinable, User]
@@ -47,11 +48,11 @@ class AbstractUserProductView(models.Model):
     date_created: models.DateTimeField[str | Combinable, Any]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
 
 class AbstractUserSearch(models.Model):
     user: ForeignKey[User | Combinable, User]
@@ -60,8 +61,8 @@ class AbstractUserSearch(models.Model):
     date_created: models.DateTimeField[str | Combinable, Any]
 
     class Meta:
-        abstract: bool
-        app_label: str
-        ordering: list[str]
-        verbose_name: str
-        verbose_name_plural: str
+        abstract: ClassVar[bool]
+        app_label: ClassVar[str]
+        ordering: ClassVar[list[str]]
+        verbose_name: ClassVar[str | _StrPromise]
+        verbose_name_plural: ClassVar[str | _StrPromise]
