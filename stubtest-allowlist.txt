@@ -904,9 +904,9 @@ oscar.apps.wishlists.models.__all__
 # =============================================================================
 # Section 12: Stubs intentionally wider than runtime for extensibility
 #
-# These methods are given broader signatures in the stubs to support downstream
-# projects (e.g. django-oscar-bluelight) that override them with additional
-# parameters. The runtime code accepts **kwargs so these extra params are safe.
+# These methods use *args/**kwargs in the stubs to support downstream projects
+# (e.g. django-oscar-bluelight) that override them with additional parameters.
+# The runtime code accepts **kwargs so these extra params are safe.
 # =============================================================================
 oscar.apps.offer.abstract_models.AbstractBenefit.apply
 oscar.apps.offer.benefits.PercentageDiscountBenefit.apply

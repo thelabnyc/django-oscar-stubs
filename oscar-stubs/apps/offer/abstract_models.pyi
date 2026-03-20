@@ -154,8 +154,8 @@ class AbstractBenefit(BaseOfferMixin, models.Model):
         basket: Any,
         condition: Any,
         offer: Any,
-        max_total_discount: Decimal | None = ...,
-        consume_items: Any | None = ...,
+        *args: Any,
+        **kwargs: Any,
     ) -> ApplicationResult: ...
     def apply_deferred(self, basket: Any, order: Any, application: dict[str, Any]) -> Any: ...
     def clean(self) -> None: ...

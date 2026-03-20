@@ -35,9 +35,8 @@ class PercentageDiscountBenefit(Benefit):
         basket: Any,
         condition: Any,
         offer: Any,
-        discount_percent: Decimal | None = ...,
-        max_total_discount: Decimal | None = ...,
-        consume_items: Any | None = ...,
+        *args: Any,
+        **kwargs: Any,
     ) -> BasketDiscount: ...
 
 class AbsoluteDiscountBenefit(Benefit):
@@ -50,9 +49,8 @@ class AbsoluteDiscountBenefit(Benefit):
         basket: Any,
         condition: Any,
         offer: Any,
-        discount_amount: Decimal | None = ...,
-        max_total_discount: Decimal | None = ...,
-        consume_items: Any | None = ...,
+        *args: Any,
+        **kwargs: Any,
     ) -> BasketDiscount: ...
 
 class FixedUnitDiscountBenefit(AbsoluteDiscountBenefit):
@@ -68,8 +66,8 @@ class FixedPriceBenefit(Benefit):
         basket: Any,
         condition: Any,
         offer: Any,
-        max_total_discount: Decimal | None = ...,
-        consume_items: Any | None = ...,
+        *args: Any,
+        **kwargs: Any,
     ) -> BasketDiscount: ...
 
 class MultibuyDiscountBenefit(Benefit):
@@ -82,8 +80,8 @@ class MultibuyDiscountBenefit(Benefit):
         basket: Any,
         condition: Any,
         offer: Any,
-        max_total_discount: Decimal | None = ...,
-        consume_items: Any | None = ...,
+        *args: Any,
+        **kwargs: Any,
     ) -> BasketDiscount: ...
 
 class ShippingBenefit(Benefit):
@@ -92,8 +90,8 @@ class ShippingBenefit(Benefit):
         basket: Any,
         condition: Any,
         offer: Any,
-        max_total_discount: Decimal | None = ...,
-        consume_items: Any | None = ...,
+        *args: Any,
+        **kwargs: Any,
     ) -> ApplicationResult: ...
 
 class ShippingAbsoluteDiscountBenefit(ShippingBenefit):
