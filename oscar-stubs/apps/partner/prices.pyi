@@ -3,7 +3,8 @@ from typing import ClassVar
 
 class Base:
     exists: ClassVar[bool]
-    is_tax_known: ClassVar[bool]
+    @property
+    def is_tax_known(self) -> bool: ...
     excl_tax: Decimal | None
     incl_tax: Decimal | None
     tax: Decimal | None
@@ -29,11 +30,11 @@ class FixedPrice(Base):
     @property
     def incl_tax(self) -> Decimal: ...
     @property
-    def is_tax_known(self) -> bool: ...  # type: ignore[override]
+    def is_tax_known(self) -> bool: ...
 
 class TaxInclusiveFixedPrice(FixedPrice):
     exists: ClassVar[bool]
-    is_tax_known: ClassVar[bool]  # type: ignore[assignment]
+    is_tax_known: ClassVar[bool]
 
     @property
     def incl_tax(self) -> Decimal: ...

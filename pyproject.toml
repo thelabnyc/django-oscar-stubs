@@ -11,7 +11,7 @@ license = { text = "ISC" }
 dependencies = [
     "django-oscar>=4.1,<4.2",
     "django-stubs>=5.2.0",
-    "django-treebeard-stubs>=4.8.1",
+    "django-treebeard-stubs>=4.8.4",
 ]
 requires-python = ">=3.12"
 

@@ -38,8 +38,8 @@ from oscar.apps.offer.results import (
 
 class ConditionalOffer(AbstractConditionalOffer):
     id: int
-    objects: ClassVar[models.Manager[ConditionalOffer]]  # type: ignore[assignment]
-    active: ClassVar[models.Manager[ConditionalOffer]]  # type: ignore[assignment]
+    objects: ClassVar[models.Manager[ConditionalOffer]]
+    active: ClassVar[models.Manager[ConditionalOffer]]
 
 class Benefit(AbstractBenefit):
     id: int
@@ -49,7 +49,7 @@ class Condition(AbstractCondition):
 
 class Range(AbstractRange):
     id: int
-    objects: ClassVar[models.Manager[Range]]  # type: ignore[assignment]
+    objects: ClassVar[models.Manager[Range]]
 
 class RangeProduct(AbstractRangeProduct):
     id: int

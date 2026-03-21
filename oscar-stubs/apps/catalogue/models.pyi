@@ -52,14 +52,13 @@ class ProductClass(AbstractProductClass):
 
 class Category(AbstractCategory):
     id: int
-    objects: ClassVar[models.Manager[Category]]  # type: ignore[assignment]
 
 class ProductCategory(AbstractProductCategory):
     id: int
 
 class Product(AbstractProduct):
     id: int
-    objects: ClassVar[models.Manager[Product]]  # type: ignore[assignment]
+    objects: ClassVar[models.Manager[Product]]
 
 class ProductRecommendation(AbstractProductRecommendation):
     id: int

@@ -10,7 +10,7 @@ from oscar.apps.catalogue.reviews.abstract_models import (
 
 class ProductReview(AbstractProductReview):
     id: int
-    objects: ClassVar[models.Manager[ProductReview]]  # type: ignore[assignment]
+    objects: ClassVar[models.Manager[ProductReview]]
 
 class Vote(AbstractVote):
     id: int

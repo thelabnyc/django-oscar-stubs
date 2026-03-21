@@ -34,7 +34,8 @@ class OfferApplications:
 
 class ApplicationResult:
     is_final: ClassVar[bool]
-    is_successful: ClassVar[bool]
+    @property
+    def is_successful(self) -> bool: ...
     discount: Decimal
     description: str | None
 
@@ -56,12 +57,12 @@ class BasketDiscount(ApplicationResult):
 
     def __init__(self, amount: Decimal) -> None: ...
     @property
-    def is_successful(self) -> bool: ...  # type: ignore[override]
+    def is_successful(self) -> bool: ...
 
 ZERO_DISCOUNT: BasketDiscount
 
 class ShippingDiscount(ApplicationResult):
-    is_successful: ClassVar[bool]  # type: ignore[assignment]
+    is_successful: ClassVar[bool]
     is_final: ClassVar[bool]
     affects: ClassVar[int]
 
@@ -69,7 +70,7 @@ SHIPPING_DISCOUNT: ShippingDiscount
 
 class PostOrderAction(ApplicationResult):
     is_final: ClassVar[bool]
-    is_successful: ClassVar[bool]  # type: ignore[assignment]
+    is_successful: ClassVar[bool]
     affects: ClassVar[int]
     description: str
 

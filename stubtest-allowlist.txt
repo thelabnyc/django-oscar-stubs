@@ -369,7 +369,6 @@ oscar.apps.basket.models.Line.attributes
 oscar.apps.basket.models.Line.id
 oscar.apps.basket.models.LineAttribute.id
 oscar.apps.basket.models.__all__
-oscar.apps.catalogue.abstract_models.AbstractCategory.fix_tree
 oscar.apps.catalogue.abstract_models.AbstractCategory.image
 oscar.apps.catalogue.abstract_models.AbstractCategory.objects
 oscar.apps.catalogue.abstract_models.AbstractProduct.objects
@@ -378,7 +377,6 @@ oscar.apps.catalogue.abstract_models.AbstractProductAttributeValue.value_image
 oscar.apps.catalogue.abstract_models.AbstractProductImage.original
 oscar.apps.catalogue.abstract_models.CategoryQuerySet
 oscar.apps.catalogue.abstract_models.ProductQuerySet
-oscar.apps.catalogue.models.AbstractCategory.fix_tree
 oscar.apps.catalogue.models.AbstractCategory.image
 oscar.apps.catalogue.models.AbstractCategory.objects
 oscar.apps.catalogue.models.AbstractProduct.objects

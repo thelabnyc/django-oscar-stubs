@@ -52,8 +52,6 @@ class AbstractCategory(MP_Node):
     _slug_separator: ClassVar[str]
     _full_name_separator: ClassVar[str]
 
-    objects: ClassVar[models.Manager[AbstractCategory]]  # type: ignore[assignment]
-
     @property
     def full_name(self) -> str: ...
     def get_full_slug(self, parent_slug: str | None = ...) -> str: ...
@@ -64,7 +62,7 @@ class AbstractCategory(MP_Node):
     def set_ancestors_are_public(self) -> None: ...
     def get_public_children(self) -> models.QuerySet[AbstractCategory]: ...
     @classmethod
-    def fix_tree(cls, fix_paths: bool = ..., **kwargs: Any) -> None: ...  # type: ignore[override]
+    def fix_tree(cls, destructive: bool = ..., fix_paths: bool = ...) -> None: ...  # type: ignore[override]
     def get_meta_title(self) -> str: ...
     def get_meta_description(self) -> str: ...
     def get_ancestors_and_self(self) -> list[AbstractCategory]: ...
@@ -426,7 +424,7 @@ class AbstractProductImage(models.Model):
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]: ...
 
 class AbstractProductCategoryHierarchy(models.Model):
-    id: models.CharField  # type: ignore[assignment]
+    id: models.CharField
     product_id: models.IntegerField
     category_id: models.IntegerField
 

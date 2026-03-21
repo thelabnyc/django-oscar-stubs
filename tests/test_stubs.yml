@@ -262,6 +262,58 @@
     reveal_type(creator.forked_method())  # N: Revealed type is "builtins.str"
     reveal_type(creator.custom_mixin_method())  # N: Revealed type is "builtins.str"
 
+- case: thirdparty_mixin_method_return_type_remapped_for_forked_app
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings_forked_order
+    [mypy.plugins.django-oscar-stubs]
+    oscar_third_party_packages = tests.thirdparty_checkout
+  main: |
+    # When a forked OrderCreator overrides place_order and calls
+    # super().place_order(), the return type from the third-party mixin
+    # should be remapped to the forked Order type.  Without remapping,
+    # super().place_order() would return oscar.apps.order.models.Order
+    # while the child declares -> tests.forked_order.models.Order,
+    # causing a spurious [return-value] error.
+    from tests.forked_order.utils import OrderCreator
+    from tests.forked_order.models import Order
+
+    creator = OrderCreator()
+    result = creator.place_order(
+        basket=None,
+        total=None,
+        shipping_method=None,
+        shipping_charge=None,
+    )
+    reveal_type(result)  # N: Revealed type is "tests.forked_order.models.Order"
+
+- case: thirdparty_mixin_param_type_remapped_for_forked_app
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings_forked_order
+    [mypy.plugins.django-oscar-stubs]
+    oscar_third_party_packages = tests.thirdparty_checkout
+  main: |
+    # When a third-party mixin has an oscar model type as a parameter
+    # (not just a return type), the parameter type should also be remapped
+    # to the forked equivalent.  Without this, the child override using the
+    # forked Order type would trigger an [override] LSP violation.
+    from tests.forked_order.utils import OrderCreator
+    from tests.forked_order.models import Order
+
+    creator = OrderCreator()
+    order = Order()
+    result = creator.update_order_status(order, "shipped")
+    reveal_type(result)  # N: Revealed type is "tests.forked_order.models.Order"
+
 - case: override_method_with_concrete_param_no_lsp_error
   mypy_config: |
     [mypy]

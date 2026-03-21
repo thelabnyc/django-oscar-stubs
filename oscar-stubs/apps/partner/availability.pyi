@@ -2,8 +2,10 @@ from typing import ClassVar
 import datetime
 
 class Base:
-    code: ClassVar[str]
-    message: ClassVar[str]
+    @property
+    def code(self) -> str: ...
+    @property
+    def message(self) -> str: ...
     dispatch_date: ClassVar[datetime.date | None]
 
     @property
@@ -31,8 +33,8 @@ class StockRequired(Base):
     def __init__(self, num_available: int) -> None: ...
     def is_purchase_permitted(self, quantity: int) -> tuple[bool, str]: ...
     @property
-    def code(self) -> str: ...  # type: ignore[override]
+    def code(self) -> str: ...
     @property
-    def short_message(self) -> str: ...  # type: ignore[override]
+    def short_message(self) -> str: ...
     @property
-    def message(self) -> str: ...  # type: ignore[override]
+    def message(self) -> str: ...

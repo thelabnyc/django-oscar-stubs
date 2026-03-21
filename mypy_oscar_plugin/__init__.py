@@ -1334,6 +1334,14 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
     This ensures that ``from oscar.apps.basket.models import Basket`` gives
     the same type as ``sandbox.basket.models.Basket`` — because at runtime,
     only one Basket model exists.
+
+    Additionally, the oscar concrete model's TypeInfo is added to the forked
+    model's MRO.  This makes the forked model a subtype of the oscar model
+    from mypy's perspective.  This is necessary because third-party packages
+    (e.g. oscarapicheckout) may have their method signatures normalized to use
+    the oscar concrete type *before* unification runs (due to processing
+    order).  Without this MRO entry, passing a forked type where a normalized
+    oscar type is expected would be a type error.
     """
     forked_fullname = ctx.cls.fullname
     forked_info = ctx.cls.info
@@ -1356,6 +1364,22 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
             continue
 
         old_info = oscar_sym.node
+
+        # Add the oscar concrete model to the forked model's MRO.
+        # This establishes a subtype relationship (forked IS-A oscar) so that
+        # forked types can be passed where oscar types are expected -- even if
+        # those oscar types are stale Instance objects created by earlier
+        # normalization passes in third-party base class hooks.
+        if old_info not in forked_info.mro:
+            # Insert right before the first oscar.apps.* abstract model entry
+            # so that the forked model's own methods and mixin methods still
+            # take precedence in resolution order.
+            insert_pos = len(forked_info.mro)
+            for i, base in enumerate(forked_info.mro):
+                if base is not forked_info and base.fullname.startswith("oscar.apps."):
+                    insert_pos = i
+                    break
+            forked_info.mro.insert(insert_pos, old_info)
 
         # Update the oscar module's symbol table
         oscar_module_fqn = f"oscar.apps.{oscar_path}.models"
@@ -1380,23 +1404,39 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
         break
 
 
+def _base_should_be_remapped(base_info: TypeInfo, plugin: OscarPlugin) -> bool:
+    """Check if a base class's methods should have oscar types remapped.
+
+    Returns True for:
+    1. oscar.apps.* classes (abstract models, non-model classes)
+    2. Third-party oscar packages (e.g. oscarapicheckout mixins)
+
+    Third-party bases are included because their method signatures may contain
+    oscar types (from get_model/get_class resolution followed by normalization),
+    which need to be remapped to forked equivalents when the corresponding app
+    is forked.
+    """
+    return base_info.fullname.startswith("oscar.apps.") or _is_third_party_oscar_fullname(base_info.fullname, plugin)
+
+
 def _remap_oscar_base_methods_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
     """Remap abstract model types in oscar base class method signatures.
 
     When a class inherits from an oscar class — whether an abstract model
     (e.g. ``AbstractVoucher``) or a non-model class loaded via ``get_class``
-    (e.g. ``BasketMiddleware``, ``ProductDetailView``) — the base class
-    methods may reference abstract models in their signatures (e.g.
-    ``is_available_for_basket(basket: AbstractBasket)``).
+    (e.g. ``BasketMiddleware``, ``ProductDetailView``) — or a third-party
+    package that uses oscar types in its method signatures (e.g.
+    ``oscarapicheckout.mixins.OrderCreatorMixin``), the base class methods may
+    reference oscar types (abstract or concrete) in their signatures.
 
     At runtime, ``AbstractBasket`` doesn't exist — only the concrete Basket
     model (whether oscar's default or a forked version).  This hook remaps
-    abstract types in the base class method signatures to their concrete
+    oscar types in the base class method signatures to their concrete/forked
     equivalents, preventing spurious ``[override]`` errors when child classes
     use the concrete types.
     """
     for base_info in ctx.cls.info.mro:
-        if not base_info.fullname.startswith("oscar.apps."):
+        if not _base_should_be_remapped(base_info, plugin):
             continue
 
         for name, sym in base_info.names.items():

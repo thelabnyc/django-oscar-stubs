@@ -15,7 +15,7 @@ class InvalidBasketLineError(Exception): ...
 
 class Basket(AbstractBasket):
     id: int
-    objects: ClassVar[models.Manager[Basket]]  # type: ignore[assignment]
+    objects: ClassVar[models.Manager[Basket]]
 
 class Line(AbstractLine):
     id: int
