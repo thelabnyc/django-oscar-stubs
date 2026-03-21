@@ -261,3 +261,51 @@
     creator = ForkedOrderCreator()
     reveal_type(creator.forked_method())  # N: Revealed type is "builtins.str"
     reveal_type(creator.custom_mixin_method())  # N: Revealed type is "builtins.str"
+
+- case: override_method_with_concrete_param_no_lsp_error
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    # When a child class overrides a method from an oscar abstract model
+    # and uses concrete types instead of abstract types in the signature,
+    # the plugin should remap abstract types in the base so that mypy
+    # doesn't report an [override] LSP violation.
+    from typing import Any
+    from django.contrib.auth.models import AnonymousUser, User
+    from oscar.apps.voucher.abstract_models import AbstractVoucher
+    from oscar.apps.basket.models import Basket
+    from oscar.apps.order.models import Order
+
+    class MyVoucher(AbstractVoucher):
+        def is_available_for_basket(self, basket: Basket) -> tuple[bool, str]:
+            return (True, "")
+
+        def record_usage(self, order: Order, user: User | AnonymousUser | None, *args: Any, **kwargs: Any) -> None:
+            pass
+
+- case: override_non_model_class_with_concrete_param_no_lsp_error
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    # Non-model classes loaded via get_class() should also have abstract
+    # types remapped in their method signatures, so that overrides using
+    # concrete types don't trigger LSP violations.
+    from django.http import HttpRequest
+    from oscar.apps.basket.middleware import BasketMiddleware
+    from oscar.apps.basket.models import Basket
+
+    class MyBasketMiddleware(BasketMiddleware):
+        def get_basket(self, request: HttpRequest) -> Basket:
+            return Basket()
+        def apply_offers_to_basket(self, request: HttpRequest, basket: Basket) -> None:
+            pass

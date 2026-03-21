@@ -1264,6 +1264,164 @@ def _remap_strategy_base_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> N
                 sym.node.type = func_type.copy_modified(ret_type=forked_pi)
 
 
+def _resolve_and_remap_type(
+    typ: Type,
+    base_info: TypeInfo,
+    plugin: OscarPlugin,
+) -> Type:
+    """Resolve and remap a type from an oscar base class method signature.
+
+    Handles both fully resolved Instance types (via ``_remap_oscar_type``)
+    and UnboundType references that haven't been resolved yet during early
+    semantic analysis.  For UnboundType, looks up the name in the base
+    class's module scope and remaps the resolved type.
+    """
+    # First try the normal remap (works for Instance types)
+    remapped = _remap_oscar_type(typ, plugin)
+    if remapped is not typ:
+        return remapped
+
+    # Handle UnboundType: resolve the name using the base class's module scope
+    proper = get_proper_type(typ)
+    if isinstance(proper, UnboundType):
+        resolved = _resolve_unbound_oscar_type(proper, base_info, plugin)
+        if resolved is not None:
+            return resolved
+
+    # Handle UnionType containing UnboundType items (e.g. AbstractOrder | None)
+    if isinstance(proper, UnionType):
+        changed = False
+        new_items: list[Type] = []
+        for item in proper.items:
+            item_proper = get_proper_type(item)
+            if isinstance(item_proper, UnboundType):
+                resolved = _resolve_unbound_oscar_type(item_proper, base_info, plugin)
+                if resolved is not None:
+                    new_items.append(resolved)
+                    changed = True
+                    continue
+            new_items.append(item)
+        if changed:
+            return UnionType.make_union(new_items)
+
+    return typ
+
+
+def _resolve_unbound_oscar_type(
+    ubt: UnboundType,
+    base_info: TypeInfo,
+    plugin: OscarPlugin,
+) -> Type | None:
+    """Try to resolve an UnboundType from a base class's module and remap it."""
+    fqn = f"{base_info.module_name}.{ubt.name}"
+    sym = plugin.lookup_fully_qualified(fqn)
+    if sym is not None and isinstance(sym.node, TypeInfo):
+        temp_instance = Instance(sym.node, [])
+        resolved = _remap_oscar_type(temp_instance, plugin)
+        if resolved is not temp_instance:
+            return resolved
+    return None
+
+
+def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
+    """Unify forked model types with their oscar concrete counterparts.
+
+    When a forked model (e.g. ``sandbox.basket.models.Basket``) is processed,
+    update the oscar concrete model's module symbol table AND patch all modules
+    that have already imported the oscar type, so that all references to
+    ``oscar.apps.basket.models.Basket`` resolve to the forked TypeInfo.
+
+    This ensures that ``from oscar.apps.basket.models import Basket`` gives
+    the same type as ``sandbox.basket.models.Basket`` — because at runtime,
+    only one Basket model exists.
+    """
+    forked_fullname = ctx.cls.fullname
+    forked_info = ctx.cls.info
+
+    for app_label, override_module in plugin._app_overrides.items():
+        if not forked_fullname.startswith(f"{override_module}.models."):
+            continue
+
+        model_name = forked_fullname.removeprefix(f"{override_module}.models.")
+        if "." in model_name:
+            continue
+
+        oscar_path = APP_LABEL_MAP.get(app_label)
+        if oscar_path is None:
+            continue
+
+        oscar_model_fqn = f"oscar.apps.{oscar_path}.models.{model_name}"
+        oscar_sym = plugin.lookup_fully_qualified(oscar_model_fqn)
+        if oscar_sym is None or not isinstance(oscar_sym.node, TypeInfo):
+            continue
+
+        old_info = oscar_sym.node
+
+        # Update the oscar module's symbol table
+        oscar_module_fqn = f"oscar.apps.{oscar_path}.models"
+        module_sym = plugin.lookup_fully_qualified(oscar_module_fqn)
+        if module_sym is not None and isinstance(module_sym.node, MypyFile):
+            sym_in_module = module_sym.node.names.get(model_name)
+            if sym_in_module is not None:
+                sym_in_module.node = forked_info
+
+        # Patch all modules that already imported the old TypeInfo.
+        # Walk every loaded module's names dict and replace references.
+        try:
+            modules = ctx.api.modules  # type: ignore[attr-defined]
+        except AttributeError:
+            break
+        for mod in modules.values():
+            if not isinstance(mod, MypyFile):
+                continue
+            for sym_name, sym_node in mod.names.items():
+                if sym_node.node is old_info:
+                    sym_node.node = forked_info
+        break
+
+
+def _remap_oscar_base_methods_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
+    """Remap abstract model types in oscar base class method signatures.
+
+    When a class inherits from an oscar class — whether an abstract model
+    (e.g. ``AbstractVoucher``) or a non-model class loaded via ``get_class``
+    (e.g. ``BasketMiddleware``, ``ProductDetailView``) — the base class
+    methods may reference abstract models in their signatures (e.g.
+    ``is_available_for_basket(basket: AbstractBasket)``).
+
+    At runtime, ``AbstractBasket`` doesn't exist — only the concrete Basket
+    model (whether oscar's default or a forked version).  This hook remaps
+    abstract types in the base class method signatures to their concrete
+    equivalents, preventing spurious ``[override]`` errors when child classes
+    use the concrete types.
+    """
+    for base_info in ctx.cls.info.mro:
+        if not base_info.fullname.startswith("oscar.apps."):
+            continue
+
+        for name, sym in base_info.names.items():
+            if not isinstance(sym.node, FuncDef):
+                continue
+            func_type = sym.node.type
+            if not isinstance(func_type, CallableType):
+                continue
+
+            changed = False
+            new_arg_types: list[Type] = []
+            for arg_type in func_type.arg_types:
+                remapped = _resolve_and_remap_type(arg_type, base_info, plugin)
+                if remapped is not arg_type:
+                    changed = True
+                new_arg_types.append(remapped)
+
+            new_ret = _resolve_and_remap_type(func_type.ret_type, base_info, plugin)
+            if new_ret is not func_type.ret_type:
+                changed = True
+
+            if changed:
+                sym.node.type = func_type.copy_modified(arg_types=new_arg_types, ret_type=new_ret)
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Method hooks: remap return types on oscar method calls
 # ──────────────────────────────────────────────────────────────────────
@@ -1366,6 +1524,46 @@ class OscarPlugin(Plugin):
 
         return False
 
+    def get_customize_class_mro_hook(self, fullname: str) -> Callable[[ClassDefContext], None] | None:
+        """Remap abstract model types in oscar base class method signatures.
+
+        The django-stubs plugin intercepts get_base_class_hook for all Model
+        subclasses, so we use get_customize_class_mro_hook instead.  This fires
+        for every class after MRO computation.  We check if the class has any
+        oscar.apps.* class in its MRO and, if so, remap abstract types in
+        those base class method signatures to concrete equivalents.
+
+        This covers both abstract models (e.g. AbstractVoucher) and non-model
+        classes loaded via get_class (e.g. BasketMiddleware, ProductDetailView).
+        """
+        info = self.lookup_fully_qualified(fullname)
+        if info is None or not isinstance(info.node, TypeInfo):
+            return None
+
+        # Check if this is a forked concrete model
+        is_forked_model = False
+        for override_module in self._app_overrides.values():
+            if fullname.startswith(f"{override_module}.models."):
+                model_name = fullname.removeprefix(f"{override_module}.models.")
+                if "." not in model_name:
+                    is_forked_model = True
+                    break
+
+        has_oscar_base = any(b.fullname.startswith("oscar.apps.") for b in info.node.mro)
+
+        if is_forked_model and has_oscar_base:
+
+            def combined_hook(ctx: ClassDefContext, *, plugin: OscarPlugin = self) -> None:
+                _unify_forked_model_hook(ctx, plugin=plugin)
+                _remap_oscar_base_methods_hook(ctx, plugin=plugin)
+
+            return combined_hook
+        elif is_forked_model:
+            return partial(_unify_forked_model_hook, plugin=self)
+        elif has_oscar_base:
+            return partial(_remap_oscar_base_methods_hook, plugin=self)
+        return None
+
     def get_attribute_hook(self, fullname: str) -> Callable[[AttributeContext], Type] | None:
         """Remap oscar types to forked equivalents on attribute access.
 
@@ -1391,6 +1589,10 @@ class OscarPlugin(Plugin):
         1. Strategy classes: special PurchaseInfo → forked PurchaseInfo remapping.
         2. Third-party oscar packages: normalize forked types (from get_model())
            back to oscar concrete types so they match child class imports.
+
+        Note: oscar abstract models are handled by get_customize_class_mro_hook
+        because the django-stubs plugin intercepts get_base_class_hook for all
+        Model subclasses.
         """
         if fullname in _STRATEGY_CLASSES:
             return partial(_remap_strategy_base_hook, plugin=self)
