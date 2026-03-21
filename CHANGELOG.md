@@ -1,3 +1,9 @@
+## v4.1.0b3 (2026-03-20)
+
+### Feat
+
+- add third-party oscar package support and cross-app model resolution
+
 ## v4.1.0b2 (2026-03-20)
 
 ### Feat
