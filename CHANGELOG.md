@@ -1,3 +1,9 @@
+## v4.1.0b5 (2026-03-21)
+
+### Fix
+
+- remap third-party base class params, eliminate type:ignore comments
+
 ## v4.1.0b4 (2026-03-21)
 
 ### Feat
