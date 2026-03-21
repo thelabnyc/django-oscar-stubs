@@ -42,7 +42,18 @@ from mypy.plugin import (
     MethodContext,
     Plugin,
 )
-from mypy.types import AnyType, CallableType, Instance, TupleType, Type, TypeOfAny, TypeType, UnionType, get_proper_type
+from mypy.types import (
+    AnyType,
+    CallableType,
+    Instance,
+    TupleType,
+    Type,
+    TypeOfAny,
+    TypeType,
+    UnboundType,
+    UnionType,
+    get_proper_type,
+)
 
 # ──────────────────────────────────────────────────────────────────────
 # Oscar app label → default oscar module path (relative to oscar.apps)
@@ -183,6 +194,90 @@ def _read_settings_from_toml(config_file: str) -> str | None:
         pass
 
     return None
+
+
+def _read_oscar_package_prefixes(
+    options: Options,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Read oscar_third_party_packages and oscar_local_packages from config.
+
+    Returns (third_party_prefixes, local_prefixes) tuples with trailing dots
+    appended to each entry.  Defaults are intentionally empty -- the plugin
+    only processes third-party/local packages when explicitly configured.
+    """
+    if not options.config_file:
+        return ((), ())
+
+    config_file = options.config_file
+
+    if config_file.endswith(".toml"):
+        third_party, local = _read_oscar_prefixes_from_toml(config_file)
+    else:
+        third_party, local = _read_oscar_prefixes_from_ini(config_file)
+
+    def _normalize(entries: list[str]) -> tuple[str, ...]:
+        return tuple(e if e.endswith(".") else f"{e}." for e in entries)
+
+    tp = _normalize(third_party) if third_party else ()
+    lp = _normalize(local) if local else ()
+    return (tp, lp)
+
+
+def _read_oscar_prefixes_from_toml(config_file: str) -> tuple[list[str], list[str]]:
+    """Read oscar package prefixes from a pyproject.toml file."""
+    try:
+        import tomllib
+
+        with open(config_file, "rb") as f:
+            data = tomllib.load(f)
+
+        section = data.get("tool", {}).get("django-oscar-stubs", {})
+        third_party = section.get("oscar_third_party_packages", [])
+        local = section.get("oscar_local_packages", [])
+
+        third_party = [str(e) for e in third_party] if isinstance(third_party, list) else []
+        local = [str(e) for e in local] if isinstance(local, list) else []
+        return (third_party, local)
+
+    except (OSError, Exception):
+        pass
+
+    return ([], [])
+
+
+def _parse_ini_list(raw: str) -> list[str]:
+    """Parse a comma-separated or newline-separated INI config value into a list.
+
+    Handles both ``a, b, c`` and multi-line values::
+
+        a
+        b
+        c
+
+    Empty strings and whitespace-only entries are filtered out.
+    """
+    # Split on commas and newlines, strip whitespace, filter empties
+    entries = re.split(r"[,\n]", raw)
+    return [e.strip() for e in entries if e.strip()]
+
+
+def _read_oscar_prefixes_from_ini(config_file: str) -> tuple[list[str], list[str]]:
+    """Read oscar package prefixes from an INI-format config file."""
+    config = configparser.ConfigParser()
+    try:
+        config.read(config_file)
+    except (configparser.Error, OSError):
+        return ([], [])
+
+    for section_name in ("mypy.plugins.django-oscar-stubs", "django-oscar-stubs"):
+        if config.has_section(section_name):
+            tp_raw = config.get(section_name, "oscar_third_party_packages", fallback="")
+            lp_raw = config.get(section_name, "oscar_local_packages", fallback="")
+            third_party = _parse_ini_list(tp_raw)
+            local = _parse_ini_list(lp_raw)
+            return (third_party, local)
+
+    return ([], [])
 
 
 def _find_settings_file(settings_module: str) -> str | None:
@@ -425,6 +520,27 @@ def _find_stubbed_modules() -> set[str]:
 # Oscar type remapping (abstract → concrete, oscar → forked)
 # ──────────────────────────────────────────────────────────────────────
 
+# Cross-app model map: maps (abstract_app_path, model_name) to the concrete
+# app label where the concrete model actually lives.  In Oscar, most abstract
+# models have their concrete counterpart in the same app.  A few, however,
+# are defined in one app but the concrete model lives in a different app
+# (because the abstract model's Meta sets ``app_label`` to another app).
+#
+# These entries were discovered by searching oscar's abstract_models.py files
+# for inner ``class Meta`` definitions that set ``app_label`` to a different
+# app than the file they reside in.  For example,
+# ``oscar/apps/address/abstract_models.py::AbstractShippingAddress`` has
+# ``class Meta: app_label = 'order'``, meaning its concrete model lives in
+# ``oscar.apps.order.models``, not ``oscar.apps.address.models``.
+_CROSS_APP_MODEL_MAP: dict[tuple[str, str], str] = {
+    # oscar.apps.address.abstract_models.AbstractShippingAddress → order app
+    ("address", "ShippingAddress"): "order",
+    # oscar.apps.address.abstract_models.AbstractBillingAddress → order app
+    ("address", "BillingAddress"): "order",
+    # oscar.apps.address.abstract_models.AbstractPartnerAddress → partner app
+    ("address", "PartnerAddress"): "partner",
+}
+
 # Pattern: oscar.apps.<path>.abstract_models.Abstract<Name>
 _ABSTRACT_MODEL_RE = re.compile(r"^oscar\.apps\.(.+)\.abstract_models\.Abstract(\w+)$")
 
@@ -445,6 +561,10 @@ def _resolve_abstract_to_concrete(fullname: str, plugin: OscarPlugin) -> Type | 
 
     E.g. oscar.apps.address.abstract_models.AbstractCountry → Country
     from oscar.apps.address.models (or forked equivalent).
+
+    Handles cross-app models where the abstract is defined in one app but the
+    concrete lives in another (e.g. AbstractShippingAddress in address app →
+    ShippingAddress in order app).
     """
     m = _ABSTRACT_MODEL_RE.match(fullname)
     if m is None:
@@ -455,6 +575,14 @@ def _resolve_abstract_to_concrete(fullname: str, plugin: OscarPlugin) -> Type | 
     app_label = _OSCAR_PATH_TO_LABEL.get(oscar_path)
     if app_label is None:
         return None
+
+    # Check for cross-app models first: the abstract may live in one app
+    # but the concrete model is in a different app.
+    cross_app_label = _CROSS_APP_MODEL_MAP.get((oscar_path, model_name))
+    if cross_app_label is not None:
+        result = _resolve_model(cross_app_label, model_name, plugin)
+        if result is not None:
+            return result
 
     return _resolve_model(app_label, model_name, plugin)
 
@@ -509,7 +637,26 @@ def _resolve_oscar_class_to_forked(fullname: str, plugin: OscarPlugin) -> Type |
     if not override_module:
         return None
 
-    return _resolve_type(f"{override_module}.{submodule}.{class_name}", plugin)
+    forked_fullname = f"{override_module}.{submodule}.{class_name}"
+
+    # Guard: skip remapping unconditionally (regardless of whether the
+    # fork is third-party or project-local) when the forked module
+    # defines a class with the same name.  This function is used by the
+    # attribute/method type remapping hooks, where remapping to the
+    # forked type would always create a cycle: the forked class extends
+    # the oscar original, so its attribute types must resolve to the
+    # oscar base, not back to itself.
+    #
+    # This differs from the guard in _resolve_class, which only skips
+    # project-local forks.  _resolve_class handles get_class() calls,
+    # where third-party packages legitimately need to resolve to the
+    # forked type (they call get_class() to obtain the class the user
+    # has overridden).
+    forked_sym = plugin.lookup_fully_qualified(forked_fullname)
+    if forked_sym is not None and isinstance(forked_sym.node, TypeInfo):
+        return None
+
+    return _resolve_type(forked_fullname, plugin)
 
 
 def _remap_oscar_type(typ: Type, plugin: OscarPlugin) -> Type:
@@ -547,12 +694,12 @@ def _remap_oscar_type(typ: Type, plugin: OscarPlugin) -> Type:
         # Even if not remapped itself, remap type args (e.g. QuerySet[AbstractProduct])
         if typ.args:
             new_args = [_remap_oscar_type(a, plugin) for a in typ.args]
-            if new_args != list(typ.args):
+            if any(a is not b for a, b in zip(new_args, typ.args)):
                 return typ.copy_modified(args=new_args)
 
     elif isinstance(typ, UnionType):
         new_items = [_remap_oscar_type(item, plugin) for item in typ.items]
-        if new_items != typ.items:
+        if any(a is not b for a, b in zip(new_items, typ.items)):
             return UnionType.make_union(new_items)
 
     return typ
@@ -626,9 +773,42 @@ def _resolve_class(
             fqn = f"{override_module}.{submodule}.{classname}"
         else:
             fqn = f"{override_module}.{classname}"
-        instance = _resolve_type(fqn, plugin)
-        if instance is not None:
-            return instance
+
+        # Cycle prevention: if the forked module is from the project's own
+        # code (not a third-party oscar package) and it defines a class with
+        # this exact name, don't resolve to it.  The forked class necessarily
+        # extends the oscar original (that's how oscar app forking works).
+        # Resolving to it here would create inheritance cycles when a
+        # third-party package uses get_class() to obtain a base class that
+        # the forked class itself overrides.
+        #
+        # For example, oscarapicheckout.mixins does:
+        #   OrderCreator = get_class("order.utils", "OrderCreator")
+        #   class OrderCreatorMixin(OrderCreator): ...
+        # And the forked app does:
+        #   class OrderCreator(OrderCreatorMixin, oscar_utils.OrderCreator): ...
+        # Resolving the get_class() call to the forked OrderCreator would
+        # create: ForkedOrderCreator -> OrderCreatorMixin -> ForkedOrderCreator.
+        #
+        # We only skip project-local forks (not third-party forks like
+        # oscarbluelight) because third-party packages that fork oscar apps
+        # are not part of the project's own inheritance chain.
+        is_third_party_fork = any(fqn.startswith(prefix) for prefix in plugin._third_party_prefixes)
+        # Skip resolution to the forked type when a project-local fork
+        # defines this class itself -- resolving to it would create an
+        # inheritance cycle (forked class extends oscar original, but
+        # get_class() would point back to the fork).  Third-party forks
+        # are not part of the project's own inheritance chain, so they
+        # are always resolved normally.
+        skip_fork = False
+        if not is_third_party_fork:
+            forked_sym = plugin.lookup_fully_qualified(fqn)
+            skip_fork = forked_sym is not None and isinstance(forked_sym.node, TypeInfo)
+
+        if not skip_fork:
+            instance = _resolve_type(fqn, plugin)
+            if instance is not None:
+                return instance
 
     # Fall back to oscar default
     instance = _resolve_type(f"oscar.apps.{module_label}.{classname}", plugin)
@@ -797,7 +977,7 @@ def _get_class_dynamic_class_hook(ctx: DynamicClassDefContext, *, plugin: OscarP
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Base class hook: remap return types in oscar strategy superclasses
+# Base class hook: remap oscar types in base class method signatures
 # ──────────────────────────────────────────────────────────────────────
 
 # Oscar strategy classes whose method return types should be remapped
@@ -818,6 +998,216 @@ _STRATEGY_CLASSES = frozenset(
 )
 
 
+def _normalize_forked_to_oscar_type(typ: Type, plugin: OscarPlugin) -> Type:
+    """Reverse-map forked types back to their oscar concrete equivalents.
+
+    When get_model() resolves names in third-party packages to the forked
+    model type (e.g. tsicommon.oscarapps.basket.models.Basket), this function
+    maps them back to the oscar concrete type (oscar.apps.basket.models.Basket).
+    This is needed so that base class method signatures in third-party packages
+    are compatible with child class overrides that use direct oscar imports.
+    """
+    typ = get_proper_type(typ)
+
+    if isinstance(typ, Instance):
+        fullname = typ.type.fullname
+
+        # Check if this type belongs to a forked module
+        for app_label, override_module in plugin._app_overrides.items():
+            if fullname.startswith(f"{override_module}."):
+                # Extract the relative path after the override module
+                # e.g. "tsicommon.oscarapps.basket.models.Basket" → "models.Basket"
+                relative = fullname[len(override_module) + 1 :]
+                oscar_path = APP_LABEL_MAP.get(app_label)
+                if oscar_path is not None:
+                    oscar_fullname = f"oscar.apps.{oscar_path}.{relative}"
+                    result = _resolve_type(oscar_fullname, plugin)
+                    if result is not None:
+                        result = get_proper_type(result)
+                        if isinstance(result, Instance) and typ.args:
+                            result = result.copy_modified(
+                                args=[_normalize_forked_to_oscar_type(a, plugin) for a in typ.args]
+                            )
+                        return result
+                break
+
+        # Recurse into type args
+        if typ.args:
+            new_args = [_normalize_forked_to_oscar_type(a, plugin) for a in typ.args]
+            if any(a is not b for a, b in zip(new_args, typ.args)):
+                return typ.copy_modified(args=new_args)
+
+    elif isinstance(typ, UnionType):
+        new_items = [_normalize_forked_to_oscar_type(item, plugin) for item in typ.items]
+        if any(a is not b for a, b in zip(new_items, typ.items)):
+            return UnionType.make_union(new_items)
+
+    return typ
+
+
+def _is_third_party_oscar_fullname(fullname: str, plugin: OscarPlugin) -> bool:
+    """Check if a fully-qualified name belongs to a third-party oscar package."""
+    for prefix in plugin._third_party_prefixes:
+        if fullname.startswith(prefix):
+            return True
+    return False
+
+
+def _resolve_and_normalize_type(typ: Type, plugin: OscarPlugin) -> Type:
+    """Resolve UnboundType references and normalize forked types to oscar types.
+
+    During semantic analysis, method signatures may contain UnboundType
+    references (e.g. ``Basket?``) that haven't been resolved yet. This
+    function attempts to resolve them through the plugin's symbol table
+    and then normalizes any forked types back to their oscar equivalents.
+    """
+    proper = get_proper_type(typ)
+
+    # Don't touch AnyType -- replacing an UnboundType("Any") with a resolved
+    # Instance(typing.Any) can change mypy's behavior for type compatibility.
+    if isinstance(proper, AnyType):
+        return typ
+
+    if isinstance(proper, Instance):
+        return _normalize_forked_to_oscar_type(proper, plugin)
+
+    if isinstance(proper, UnionType):
+        new_items = [_resolve_and_normalize_type(item, plugin) for item in proper.items]
+        if any(a is not b for a, b in zip(new_items, proper.items)):
+            return UnionType.make_union(new_items)
+        return typ
+
+    # Handle UnboundType: try to resolve the name to a concrete oscar type.
+    # This handles cases where get_model() created a module-level name like
+    # ``Basket = get_model("basket", "Basket")`` that resolves to a forked
+    # type, but the method signature still contains an UnboundType("Basket").
+    #
+    # Note: we check the original ``typ`` (not ``proper``) because
+    # get_proper_type() may have already resolved UnboundType to something
+    # else.  If the original is an UnboundType, we try to resolve it.
+    if isinstance(typ, UnboundType):
+        unbound_name = typ.name
+        # Oscar model names are unique across apps (e.g. there is only one
+        # "Basket" model, only one "Product" model, etc.), so matching the
+        # first app that has a model with this name is correct.
+        for app_label in plugin._app_overrides:
+            oscar_path = APP_LABEL_MAP.get(app_label)
+            if oscar_path is None:
+                continue
+            # Try to find a concrete oscar model with this name
+            candidate = f"oscar.apps.{oscar_path}.models.{unbound_name}"
+            result = _resolve_type(candidate, plugin)
+            if result is not None:
+                return result
+
+    return typ
+
+
+def _type_might_contain_forked_type(typ: Type, plugin: OscarPlugin) -> bool:
+    """Quick check: could this type contain a forked module type?
+
+    Used as a pre-filter before more expensive normalization.  Only returns
+    True if the type (or its components) reference a forked app module.
+    """
+    proper = get_proper_type(typ)
+
+    if isinstance(proper, Instance):
+        fullname = proper.type.fullname
+        for override_module in plugin._app_overrides.values():
+            if fullname.startswith(f"{override_module}."):
+                return True
+        return any(_type_might_contain_forked_type(a, plugin) for a in proper.args) if proper.args else False
+
+    if isinstance(proper, UnionType):
+        return any(_type_might_contain_forked_type(item, plugin) for item in proper.items)
+
+    # For UnboundType, we can't easily tell without resolving it, so we
+    # check if the name matches a model name in any forked app.
+    if isinstance(typ, UnboundType):
+        unbound_name = typ.name
+        for app_label in plugin._app_overrides:
+            oscar_path = APP_LABEL_MAP.get(app_label)
+            if oscar_path is None:
+                continue
+            candidate = f"oscar.apps.{oscar_path}.models.{unbound_name}"
+            sym = plugin.lookup_fully_qualified(candidate)
+            if sym is not None and isinstance(sym.node, TypeInfo):
+                return True
+
+    return False
+
+
+def _normalize_callable_forked_to_oscar(func_type: CallableType, plugin: OscarPlugin) -> CallableType | None:
+    """Reverse-map forked types in a CallableType back to oscar types.
+
+    Handles both already-resolved Instance types and UnboundType references
+    that may resolve to forked types.
+
+    Returns the modified CallableType if any changes were made, or None
+    if no remapping was needed.
+    """
+    # Pre-filter: check if any arg or return type might reference forked types.
+    # This avoids modifying method signatures that don't need normalization,
+    # which can cause spurious type errors from CallableType.copy_modified.
+    has_forked = False
+    for arg_type in func_type.arg_types:
+        if _type_might_contain_forked_type(arg_type, plugin):
+            has_forked = True
+            break
+    if not has_forked:
+        if not _type_might_contain_forked_type(func_type.ret_type, plugin):
+            return None
+
+    changed = False
+
+    new_arg_types: list[Type] = []
+    for arg_type in func_type.arg_types:
+        normalized = _resolve_and_normalize_type(arg_type, plugin)
+        if normalized is not arg_type:
+            changed = True
+        new_arg_types.append(normalized)
+
+    new_ret = _resolve_and_normalize_type(func_type.ret_type, plugin)
+    if new_ret is not func_type.ret_type:
+        changed = True
+
+    if changed:
+        return func_type.copy_modified(arg_types=new_arg_types, ret_type=new_ret)
+    return None
+
+
+def _remap_base_class_methods_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
+    """Normalize forked types in third-party base class method signatures.
+
+    When a class extends a third-party oscar package base class (e.g.
+    oscarcch.calculator.CCHTaxCalculator), the base class may have method
+    signatures containing forked types (from get_model() resolution).
+    These forked types are sibling types to the oscar concrete types that
+    child classes typically import via TYPE_CHECKING, causing spurious
+    ``[override]`` errors.
+
+    This hook normalizes forked types back to their oscar concrete equivalents
+    in third-party base class methods, so that both parent and child use
+    compatible types.
+
+    Only fires for third-party oscar package classes -- oscar.apps.* classes
+    are handled by the attribute hook.
+    """
+    for base_info in ctx.cls.info.mro:
+        if not _is_third_party_oscar_fullname(base_info.fullname, plugin):
+            continue
+
+        for name, sym in base_info.names.items():
+            if not isinstance(sym.node, FuncDef):
+                continue
+            func_type = sym.node.type
+            if not isinstance(func_type, CallableType):
+                continue
+            normalized = _normalize_callable_forked_to_oscar(func_type, plugin)
+            if normalized is not None:
+                sym.node.type = normalized
+
+
 def _remap_strategy_base_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
     """Remap PurchaseInfo return types in oscar strategy base class methods.
 
@@ -828,6 +1218,10 @@ def _remap_strategy_base_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> N
     During semantic analysis, return types are still UnboundType (not yet
     resolved). We replace them with the already-resolved forked Instance.
     """
+    # First, apply the general base-class method remapping
+    _remap_base_class_methods_hook(ctx, plugin=plugin)
+
+    # Then handle the special PurchaseInfo case with UnboundType resolution
     if "partner" not in plugin._app_overrides:
         return
 
@@ -866,7 +1260,7 @@ def _remap_strategy_base_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> N
             # Handle unresolved types (UnboundType) during semantic analysis.
             # At this point the return type is still "PurchaseInfo?" — replace
             # it directly with the resolved forked PurchaseInfo Instance.
-            if hasattr(ret, "name") and getattr(ret, "name", None) == "PurchaseInfo":
+            if isinstance(ret, UnboundType) and ret.name == "PurchaseInfo":
                 sym.node.type = func_type.copy_modified(ret_type=forked_pi)
 
 
@@ -897,6 +1291,7 @@ class OscarPlugin(Plugin):
         super().__init__(options)
         self._stubbed_modules = _find_stubbed_modules()
         self._app_overrides = _detect_forked_apps(options)
+        self._third_party_prefixes, self._local_prefixes = _read_oscar_package_prefixes(options)
 
     @staticmethod
     def _module_exists(module_name: str) -> bool:
@@ -949,39 +1344,80 @@ class OscarPlugin(Plugin):
 
         return deps
 
+    def _is_oscar_related_class(self, class_fullname: str) -> bool:
+        """Check if a class belongs to oscar, a forked app, or an oscar-using package."""
+        if class_fullname.startswith("oscar.apps."):
+            return True
+
+        # Third-party oscar-using packages (installed)
+        for prefix in self._third_party_prefixes:
+            if class_fullname.startswith(prefix):
+                return True
+
+        # Project-local oscar-using packages
+        for prefix in self._local_prefixes:
+            if class_fullname.startswith(prefix):
+                return True
+
+        # Forked app modules
+        for override_module in self._app_overrides.values():
+            if class_fullname.startswith(f"{override_module}."):
+                return True
+
+        return False
+
     def get_attribute_hook(self, fullname: str) -> Callable[[AttributeContext], Type] | None:
         """Remap oscar types to forked equivalents on attribute access.
 
         Fires for attribute access on:
         1. oscar.apps.* classes (abstract and concrete models)
         2. Forked module classes (so that inherited oscar fields are remapped)
+        3. Third-party oscar-using packages (oscarcch, oscarbluelight, etc.)
 
         This ensures that field types (e.g. ForeignKey targets) are remapped
         to forked app types when the app is forked.
         """
         # fullname is "some.module.ClassName.attr_name"
         class_fullname, _, _ = fullname.rpartition(".")
-        if class_fullname.startswith("oscar.apps."):
+        if self._is_oscar_related_class(class_fullname):
             return partial(_remap_oscar_attr_hook, plugin=self)
-
-        # Also fire for classes in forked modules — these inherit oscar fields
-        # that may reference abstract types needing remapping
-        for override_module in self._app_overrides.values():
-            if class_fullname.startswith(f"{override_module}."):
-                return partial(_remap_oscar_attr_hook, plugin=self)
 
         return None
 
     def get_base_class_hook(self, fullname: str) -> Callable[[ClassDefContext], None] | None:
-        """Remap return types in oscar strategy base classes.
+        """Normalize types in base class method signatures.
 
-        When a class extends an oscar strategy class and the partner app is
-        forked with a custom PurchaseInfo, update the base class method
-        signatures so override return types are compatible.
+        Handles two cases:
+        1. Strategy classes: special PurchaseInfo → forked PurchaseInfo remapping.
+        2. Third-party oscar packages: normalize forked types (from get_model())
+           back to oscar concrete types so they match child class imports.
         """
         if fullname in _STRATEGY_CLASSES:
             return partial(_remap_strategy_base_hook, plugin=self)
+        if _is_third_party_oscar_fullname(fullname, self):
+            return partial(_remap_base_class_methods_hook, plugin=self)
         return None
+
+    def _is_method_hook_class(self, class_fullname: str) -> bool:
+        """Check if a class should have its method return types remapped.
+
+        The method hook is more targeted than the attribute hook. It fires for:
+        1. oscar.apps.* classes (strategy classes, models, etc.)
+        2. Forked app modules (overridden strategy classes)
+
+        It does NOT fire for third-party or project-local oscar packages because
+        those don't typically need return type remapping (their types are already
+        resolved by get_model()) and broad method hook registration can cause
+        spurious type errors.
+        """
+        if class_fullname.startswith("oscar.apps."):
+            return True
+
+        for override_module in self._app_overrides.values():
+            if class_fullname.startswith(f"{override_module}."):
+                return True
+
+        return False
 
     def get_method_hook(self, fullname: str) -> Callable[[MethodContext], Type] | None:
         """Remap oscar types in method call return values.
@@ -990,13 +1426,8 @@ class OscarPlugin(Plugin):
         the forked PurchaseInfo type instead of the oscar stub type.
         """
         class_fullname, _, _ = fullname.rpartition(".")
-        if class_fullname in _STRATEGY_CLASSES:
+        if self._is_method_hook_class(class_fullname):
             return partial(_remap_method_return_hook, plugin=self)
-
-        # Also remap for forked strategy classes
-        for override_module in self._app_overrides.values():
-            if class_fullname.startswith(f"{override_module}."):
-                return partial(_remap_method_return_hook, plugin=self)
 
         return None
 

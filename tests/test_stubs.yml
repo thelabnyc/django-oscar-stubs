@@ -236,3 +236,28 @@
     from oscar.apps.order.abstract_models import AbstractOrder
     order: AbstractOrder
     reveal_type(order.basket_discounts)  # N: Revealed type is "django.db.models.query.QuerySet[oscar.apps.order.models.OrderDiscount, oscar.apps.order.models.OrderDiscount]"
+
+- case: get_class_no_mro_cycle_with_forked_app
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings_forked_order
+  main: |
+    # Verify that get_class resolves to the oscar base when the order app is
+    # forked, preventing MRO cycles when a third-party mixin and the forked
+    # class both derive from get_class("order.utils", "OrderCreator").
+    from oscar.core.loading import get_class
+    from tests.forked_order.utils import OrderCreator as ForkedOrderCreator
+
+    # The plugin must resolve this to oscar.apps.order.utils.OrderCreator
+    # (not the forked version), to avoid creating an inheritance cycle.
+    BaseOrderCreator = get_class("order.utils", "OrderCreator")
+    reveal_type(BaseOrderCreator)  # N: Revealed type is "def () -> oscar.apps.order.utils.OrderCreator"
+
+    # Verify the forked class is usable (MRO is valid, no cycle)
+    creator = ForkedOrderCreator()
+    reveal_type(creator.forked_method())  # N: Revealed type is "builtins.str"
+    reveal_type(creator.custom_mixin_method())  # N: Revealed type is "builtins.str"
