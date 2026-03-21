@@ -1,3 +1,9 @@
+## v4.1.0b4 (2026-03-21)
+
+### Feat
+
+- remap abstract types in oscar base class signatures to prevent LSP override errors
+
 ## v4.1.0b3 (2026-03-20)
 
 ### Feat
