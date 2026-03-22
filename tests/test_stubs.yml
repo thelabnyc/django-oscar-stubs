@@ -361,3 +361,55 @@
             return Basket()
         def apply_offers_to_basket(self, request: HttpRequest, basket: Basket) -> None:
             pass
+
+- case: forked_model_queryset_compat_with_annotation
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings_forked_order
+  main: |
+    # When a forked model is used in a return type annotation, QuerySet
+    # operations (which may return the oscar base type due to processing
+    # order) should still be compatible with the forked type annotation.
+    from django.db.models import QuerySet
+    from tests.forked_order.models import Order
+
+    def get_queryset() -> QuerySet[Order]:
+        return Order.objects.filter(status="pending").all()
+
+- case: forked_model_objects_get_compat_with_annotation
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings_forked_order
+  main: |
+    # objects.get() should return a type compatible with the forked model
+    # annotation, even if the Manager returns the oscar base type internally.
+    from tests.forked_order.models import Order
+
+    order: Order = Order.objects.get(pk=1)
+
+- case: add_product_tuple_return_remapped
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    # basket.add_product() returns tuple[AbstractLine, bool] in the stub.
+    # The plugin should remap AbstractLine to the concrete Line type.
+    from oscar.apps.basket.abstract_models import AbstractBasket
+    from oscar.apps.basket.models import Basket, Line
+
+    basket: AbstractBasket
+    line, created = basket.add_product(product=None, quantity=1)  # type: ignore[arg-type]
+    reveal_type(line)  # N: Revealed type is "oscar.apps.basket.models.Line"
+    reveal_type(created)  # N: Revealed type is "builtins.bool"

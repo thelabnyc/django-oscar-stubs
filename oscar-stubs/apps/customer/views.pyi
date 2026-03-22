@@ -39,7 +39,7 @@ class AccountAuthView(generic.TemplateView):
     def get_registration_success_url(self, form: Any) -> str: ...
 
 class LogoutView(generic.RedirectView):
-    url: str
+    url: str | None
     permanent: bool
     def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse: ...
 

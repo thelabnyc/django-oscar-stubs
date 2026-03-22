@@ -697,6 +697,11 @@ def _remap_oscar_type(typ: Type, plugin: OscarPlugin) -> Type:
             if any(a is not b for a, b in zip(new_args, typ.args)):
                 return typ.copy_modified(args=new_args)
 
+    elif isinstance(typ, TupleType):
+        new_items = [_remap_oscar_type(item, plugin) for item in typ.items]
+        if any(a is not b for a, b in zip(new_items, typ.items)):
+            return typ.copy_modified(items=new_items)
+
     elif isinstance(typ, UnionType):
         new_items = [_remap_oscar_type(item, plugin) for item in typ.items]
         if any(a is not b for a, b in zip(new_items, typ.items)):
@@ -1037,6 +1042,11 @@ def _normalize_forked_to_oscar_type(typ: Type, plugin: OscarPlugin) -> Type:
             if any(a is not b for a, b in zip(new_args, typ.args)):
                 return typ.copy_modified(args=new_args)
 
+    elif isinstance(typ, TupleType):
+        new_items = [_normalize_forked_to_oscar_type(item, plugin) for item in typ.items]
+        if any(a is not b for a, b in zip(new_items, typ.items)):
+            return typ.copy_modified(items=new_items)
+
     elif isinstance(typ, UnionType):
         new_items = [_normalize_forked_to_oscar_type(item, plugin) for item in typ.items]
         if any(a is not b for a, b in zip(new_items, typ.items)):
@@ -1070,6 +1080,12 @@ def _resolve_and_normalize_type(typ: Type, plugin: OscarPlugin) -> Type:
 
     if isinstance(proper, Instance):
         return _normalize_forked_to_oscar_type(proper, plugin)
+
+    if isinstance(proper, TupleType):
+        new_items = [_resolve_and_normalize_type(item, plugin) for item in proper.items]
+        if any(a is not b for a, b in zip(new_items, proper.items)):
+            return proper.copy_modified(items=new_items)
+        return typ
 
     if isinstance(proper, UnionType):
         new_items = [_resolve_and_normalize_type(item, plugin) for item in proper.items]
@@ -1117,6 +1133,9 @@ def _type_might_contain_forked_type(typ: Type, plugin: OscarPlugin) -> bool:
             if fullname.startswith(f"{override_module}."):
                 return True
         return any(_type_might_contain_forked_type(a, plugin) for a in proper.args) if proper.args else False
+
+    if isinstance(proper, TupleType):
+        return any(_type_might_contain_forked_type(item, plugin) for item in proper.items)
 
     if isinstance(proper, UnionType):
         return any(_type_might_contain_forked_type(item, plugin) for item in proper.items)
@@ -1288,8 +1307,8 @@ def _resolve_and_remap_type(
         if resolved is not None:
             return resolved
 
-    # Handle UnionType containing UnboundType items (e.g. AbstractOrder | None)
-    if isinstance(proper, UnionType):
+    # Handle TupleType containing UnboundType items (e.g. tuple[AbstractLine, bool])
+    if isinstance(proper, TupleType):
         changed = False
         new_items: list[Type] = []
         for item in proper.items:
@@ -1302,7 +1321,23 @@ def _resolve_and_remap_type(
                     continue
             new_items.append(item)
         if changed:
-            return UnionType.make_union(new_items)
+            return proper.copy_modified(items=new_items)
+
+    # Handle UnionType containing UnboundType items (e.g. AbstractOrder | None)
+    if isinstance(proper, UnionType):
+        changed = False
+        new_items2: list[Type] = []
+        for item in proper.items:
+            item_proper = get_proper_type(item)
+            if isinstance(item_proper, UnboundType):
+                resolved = _resolve_unbound_oscar_type(item_proper, base_info, plugin)
+                if resolved is not None:
+                    new_items2.append(resolved)
+                    changed = True
+                    continue
+            new_items2.append(item)
+        if changed:
+            return UnionType.make_union(new_items2)
 
     return typ
 
@@ -1380,6 +1415,17 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
                     insert_pos = i
                     break
             forked_info.mro.insert(insert_pos, old_info)
+
+        # Also add the forked model to the oscar concrete model's MRO.
+        # This establishes the reverse subtype relationship (oscar IS-A
+        # forked) so that stale Instance objects parameterized with the
+        # old oscar TypeInfo (created before unification ran, e.g. by
+        # django-stubs Manager/QuerySet inference) are treated as
+        # compatible with the forked type.  Together with the forward
+        # relationship above, this makes the two TypeInfos mutually
+        # substitutable -- effectively the same type for type-checking.
+        if forked_info not in old_info.mro:
+            old_info.mro.insert(1, forked_info)
 
         # Update the oscar module's symbol table
         oscar_module_fqn = f"oscar.apps.{oscar_path}.models"

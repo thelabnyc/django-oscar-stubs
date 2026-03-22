@@ -126,7 +126,7 @@ wheels = [
 
 [[package]]
 name = "django-oscar-stubs"
-version = "4.1.0b3"
+version = "4.1.0b5"
 source = { editable = "." }
 dependencies = [
     { name = "django-oscar" },
@@ -149,7 +149,7 @@ dev = [
 requires-dist = [
     { name = "django-oscar", specifier = ">=4.1,<4.2" },
     { name = "django-stubs", specifier = ">=5.2.0" },
-    { name = "django-treebeard-stubs", specifier = ">=4.8.1" },
+    { name = "django-treebeard-stubs", specifier = ">=4.8.4" },
 ]
 
 [package.metadata.requires-dev]

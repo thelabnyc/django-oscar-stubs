@@ -7,7 +7,11 @@ class Base:
     @property
     def message(self) -> str: ...
     dispatch_date: ClassVar[datetime.date | None]
-
+    # num_available is defined by subclasses (e.g. StockRequired) and accessed
+    # by oscar.apps.basket.abstract_models and other oscar code on Base-typed
+    # references. Declared here so that callers using Base don't need to narrow.
+    @property
+    def num_available(self) -> int: ...
     @property
     def short_message(self) -> str: ...
     @property

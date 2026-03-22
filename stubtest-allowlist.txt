@@ -1312,3 +1312,4 @@ oscar.test.factories.Member.band
 oscar.test.factories.Member.band_id
 oscar.test.factories.Member.id
 oscar.test.factories.Member.name
+oscar.apps.partner.availability.Base.num_available

@@ -3,12 +3,13 @@ import datetime
 
 from django.db.models import QuerySet
 from django.http import HttpResponse
+from django.utils.functional import _StrPromise
 
 class ReportGenerator:
     filename_template: str
     content_type: str
     code: str
-    description: str
+    description: str | _StrPromise
     date_range_field_name: str | None
     model_class: type | None
     queryset: QuerySet[Any] | None
