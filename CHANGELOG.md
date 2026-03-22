@@ -1,3 +1,9 @@
+## v4.1.0b6 (2026-03-21)
+
+### Fix
+
+- improve mypy plugin type remapping and widen stub types
+
 ## v4.1.0b5 (2026-03-21)
 
 ### Fix
