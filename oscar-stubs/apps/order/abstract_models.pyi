@@ -347,8 +347,7 @@ class AbstractShippingEvent(models.Model):
 
     def num_affected_lines(self) -> int: ...
 
-class ShippingEventQuantity(models.Model):
-    id: int
+class AbstractShippingEventQuantity(models.Model):
     event: models.ForeignKey[AbstractShippingEvent | Combinable, AbstractShippingEvent]
     event_id: int
     line: models.ForeignKey[AbstractLine | Combinable, AbstractLine]
@@ -356,6 +355,7 @@ class ShippingEventQuantity(models.Model):
     quantity: models.PositiveIntegerField[float | Combinable, int]
 
     class Meta:
+        abstract: ClassVar[bool]
         app_label: ClassVar[str]
         verbose_name: ClassVar[str | _StrPromise]
         verbose_name_plural: ClassVar[str | _StrPromise]

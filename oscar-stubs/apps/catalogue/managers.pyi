@@ -1,8 +1,10 @@
-from typing import Any
+from typing import Any, TypeVar
 
 from django.db import models
 from django.db.models import Q
-from treebeard.mp_tree import MP_NodeQuerySet
+from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
+
+_T = TypeVar("_T", bound=MP_Node)
 
 class AttributeFilter(dict[str, tuple[str | None, Any]]):
     def __init__(self, filter_kwargs: dict[str, Any]) -> None: ...
@@ -34,6 +36,13 @@ class ProductQuerySet(models.QuerySet[Any]):
         include_parent_children_attributes: bool = ...,
     ) -> ProductQuerySet: ...
 
-class CategoryQuerySet(MP_NodeQuerySet):
-    def browsable(self) -> CategoryQuerySet: ...
-    def for_menu(self) -> CategoryQuerySet: ...
+class CategoryQuerySet(MP_NodeQuerySet[_T]):
+    def browsable(self) -> CategoryQuerySet[_T]: ...
+    def for_menu(self) -> CategoryQuerySet[_T]: ...
+
+class CategoryManager(MP_NodeManager[_T]):
+    def get_queryset(self) -> CategoryQuerySet[_T]: ...
+
+class _CategoryManagerFromQuerySet(CategoryManager[_T]):
+    def browsable(self) -> CategoryQuerySet[_T]: ...
+    def for_menu(self) -> CategoryQuerySet[_T]: ...

@@ -1,7 +1,11 @@
 from collections.abc import Callable
+from decimal import Decimal
 from typing import Any
 
 from django import forms
+from oscar.apps.partner.abstract_models import AbstractPartner
+
+Partner: type[AbstractPartner]
 
 class SEOFormMixin:
     seo_fields: list[str]
@@ -94,3 +98,22 @@ class OptionForm(forms.ModelForm):
     class Meta:
         model: type
         fields: list[str]
+
+class CategorySearchForm(forms.Form):
+    name: forms.CharField
+
+class ProductBulkActionForm(forms.Form):
+    selected_products: forms.ModelMultipleChoiceField
+    select_all_parents: forms.BooleanField
+    select_all_children: forms.BooleanField
+    select_all_standalones: forms.BooleanField
+    def __init__(self, *args: Any, products_queryset: Any = ..., user: Any = ..., **kwargs: Any) -> None: ...
+    def clean(self) -> dict[str, Any]: ...
+
+class SetProductPriceForm(ProductBulkActionForm):
+    new_price: forms.DecimalField
+    increase_by_amount: forms.DecimalField
+    increase_by_percentage: forms.DecimalField
+    def __init__(self, *args: Any, products_queryset: Any = ..., user: Any = ..., **kwargs: Any) -> None: ...
+    def clean(self) -> dict[str, Any]: ...
+    def get_specific_prices(self) -> dict[int, Decimal]: ...

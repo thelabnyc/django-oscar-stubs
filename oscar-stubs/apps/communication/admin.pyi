@@ -1,1 +1,3 @@
 from django.contrib import admin as admin
+
+class EmailAdmin(admin.ModelAdmin): ...

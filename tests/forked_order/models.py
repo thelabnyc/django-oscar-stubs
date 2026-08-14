@@ -12,6 +12,7 @@ from oscar.apps.order.abstract_models import (
     AbstractPaymentEvent,
     AbstractPaymentEventType,
     AbstractShippingEvent,
+    AbstractShippingEventQuantity,
     AbstractShippingEventType,
     AbstractSurcharge,
 )
@@ -64,6 +65,11 @@ class LineAttribute(AbstractLineAttribute):
 
 class ShippingEvent(AbstractShippingEvent):
     class Meta(AbstractShippingEvent.Meta):
+        app_label = "order"
+
+
+class ShippingEventQuantity(AbstractShippingEventQuantity):
+    class Meta(AbstractShippingEventQuantity.Meta):
         app_label = "order"
 
 

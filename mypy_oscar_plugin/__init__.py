@@ -1358,6 +1358,23 @@ def _resolve_unbound_oscar_type(
     return None
 
 
+def _replace_symbol_node(sym: SymbolTableNode, new_node: TypeInfo) -> SymbolTableNode:
+    """Build a replacement SymbolTableNode pointing at ``new_node``.
+
+    Since mypy 2.3, ``SymbolTableNode.node`` is a read-only property, so
+    retargeting a name requires swapping the entry in its symbol table.
+    """
+    return SymbolTableNode(
+        sym.kind,
+        new_node,
+        module_public=sym.module_public,
+        implicit=sym.implicit,
+        module_hidden=sym.module_hidden,
+        plugin_generated=sym.plugin_generated,
+        no_serialize=sym.no_serialize,
+    )
+
+
 def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> None:
     """Unify forked model types with their oscar concrete counterparts.
 
@@ -1433,7 +1450,7 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
         if module_sym is not None and isinstance(module_sym.node, MypyFile):
             sym_in_module = module_sym.node.names.get(model_name)
             if sym_in_module is not None:
-                sym_in_module.node = forked_info
+                module_sym.node.names[model_name] = _replace_symbol_node(sym_in_module, forked_info)
 
         # Patch all modules that already imported the old TypeInfo.
         # Walk every loaded module's names dict and replace references.
@@ -1446,7 +1463,7 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
                 continue
             for sym_name, sym_node in mod.names.items():
                 if sym_node.node is old_info:
-                    sym_node.node = forked_info
+                    mod.names[sym_name] = _replace_symbol_node(sym_node, forked_info)
         break
 
 
