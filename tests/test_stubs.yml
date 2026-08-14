@@ -74,7 +74,7 @@
   main: |
     from oscar.core.loading import get_class
     EmailAuthenticationForm = get_class('customer.forms', 'EmailAuthenticationForm')
-    reveal_type(EmailAuthenticationForm)  # N: Revealed type is "def (host: builtins.str, *args: Any, **kwargs: Any) -> oscar.apps.customer.forms.EmailAuthenticationForm"
+    reveal_type(EmailAuthenticationForm)  # N: Revealed type is "def (host: str, *args: Any, **kwargs: Any) -> oscar.apps.customer.forms.EmailAuthenticationForm"
 
 - case: get_classes_resolves_tuple
   mypy_config: |
@@ -116,7 +116,7 @@
     from oscar.core.loading import get_class
     module_label: str = 'address.forms'
     Cls = get_class(module_label, 'UserAddressForm')
-    reveal_type(Cls)  # N: Revealed type is "builtins.type"
+    reveal_type(Cls)  # N: Revealed type is "type"
 
 - case: get_model_unknown_app_label_fallback
   mypy_config: |
@@ -142,7 +142,7 @@
   main: |
     from oscar.core.loading import get_class
     Cls = get_class('address.forms', 'NonexistentForm')
-    reveal_type(Cls)  # N: Revealed type is "builtins.type"
+    reveal_type(Cls)  # N: Revealed type is "type"
 
 - case: get_classes_with_tuple_syntax
   mypy_config: |
@@ -170,7 +170,7 @@
     from oscar.core.loading import get_classes
     module_label: str = 'basket.forms'
     result = get_classes(module_label, ['BasketLineForm', 'SavedLineForm'])
-    reveal_type(result)  # N: Revealed type is "builtins.list[builtins.type]"
+    reveal_type(result)  # N: Revealed type is "list[type]"
 
 - case: get_model_unknown_model_name_fallback
   mypy_config: |
@@ -259,8 +259,8 @@
 
     # Verify the forked class is usable (MRO is valid, no cycle)
     creator = ForkedOrderCreator()
-    reveal_type(creator.forked_method())  # N: Revealed type is "builtins.str"
-    reveal_type(creator.custom_mixin_method())  # N: Revealed type is "builtins.str"
+    reveal_type(creator.forked_method())  # N: Revealed type is "str"
+    reveal_type(creator.custom_mixin_method())  # N: Revealed type is "str"
 
 - case: thirdparty_mixin_method_return_type_remapped_for_forked_app
   mypy_config: |
@@ -412,7 +412,7 @@
     basket: AbstractBasket
     line, created = basket.add_product(product=None, quantity=1)  # type: ignore[arg-type]
     reveal_type(line)  # N: Revealed type is "oscar.apps.basket.models.Line"
-    reveal_type(created)  # N: Revealed type is "builtins.bool"
+    reveal_type(created)  # N: Revealed type is "bool"
 
 - case: get_class_resolves_bulk_action
   mypy_config: |
@@ -440,7 +440,7 @@
 
     mixin: BulkEditMixin
     actions = mixin.get_actions()
-    reveal_type(actions)  # N: Revealed type is "builtins.dict[builtins.str, oscar.views.generic.AbstractBulkAction | None]"
+    reveal_type(actions)  # N: Revealed type is "dict[str, oscar.views.generic.AbstractBulkAction | None]"
 
 - case: category_manager_queryset_methods
   mypy_config: |
@@ -453,5 +453,6 @@
   main: |
     from oscar.apps.catalogue.models import Category
 
-    reveal_type(Category.objects.browsable())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet"
-    reveal_type(Category.objects.for_menu())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet"
+    reveal_type(Category.objects.get())  # N: Revealed type is "oscar.apps.catalogue.models.Category"
+    reveal_type(Category.objects.browsable())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet[oscar.apps.catalogue.models.Category]"
+    reveal_type(Category.objects.for_menu())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet[oscar.apps.catalogue.models.Category]"
