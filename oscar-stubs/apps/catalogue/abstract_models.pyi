@@ -1,4 +1,4 @@
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -7,6 +7,8 @@ from django.db import models
 from django.db.models.expressions import Combinable
 from django.db.models.lookups import StartsWith
 from django.utils.functional import _StrPromise, cached_property
+from oscar.apps.catalogue.managers import CategoryManager as CategoryManager
+from oscar.apps.catalogue.managers import _CategoryManagerFromQuerySet
 from oscar.apps.catalogue.product_attributes import ProductAttributesContainer
 from oscar.apps.partner.abstract_models import AbstractStockRecord
 from oscar.models.fields import AutoSlugField, NullCharField
@@ -52,6 +54,8 @@ class AbstractCategory(MP_Node):
     _slug_separator: ClassVar[str]
     _full_name_separator: ClassVar[str]
 
+    objects: ClassVar[_CategoryManagerFromQuerySet[Self]]
+
     @property
     def full_name(self) -> str: ...
     def get_full_slug(self, parent_slug: str | None = ...) -> str: ...
@@ -62,7 +66,7 @@ class AbstractCategory(MP_Node):
     def set_ancestors_are_public(self) -> None: ...
     def get_public_children(self) -> models.QuerySet[AbstractCategory]: ...
     @classmethod
-    def fix_tree(cls, destructive: bool = ..., fix_paths: bool = ...) -> None: ...  # type: ignore[override]
+    def fix_tree(cls, fix_paths: bool = ..., **kwargs: Any) -> None: ...  # type: ignore[override]
     def get_meta_title(self) -> str: ...
     def get_meta_description(self) -> str: ...
     def get_ancestors_and_self(self) -> list[AbstractCategory]: ...

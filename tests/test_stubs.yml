@@ -413,3 +413,45 @@
     line, created = basket.add_product(product=None, quantity=1)  # type: ignore[arg-type]
     reveal_type(line)  # N: Revealed type is "oscar.apps.basket.models.Line"
     reveal_type(created)  # N: Revealed type is "builtins.bool"
+
+- case: get_class_resolves_bulk_action
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.core.loading import get_class
+    SetProductPriceAction = get_class('dashboard.catalogue.bulk_actions', 'SetProductPriceAction')
+    reveal_type(SetProductPriceAction)  # N: Revealed type is "def () -> oscar.apps.dashboard.catalogue.bulk_actions.SetProductPriceAction"
+
+- case: bulk_edit_mixin_get_actions
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.views.generic import AbstractBulkAction, BulkEditMixin
+
+    mixin: BulkEditMixin
+    actions = mixin.get_actions()
+    reveal_type(actions)  # N: Revealed type is "builtins.dict[builtins.str, oscar.views.generic.AbstractBulkAction | None]"
+
+- case: category_manager_queryset_methods
+  mypy_config: |
+    [mypy]
+    plugins =
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings
+  main: |
+    from oscar.apps.catalogue.models import Category
+
+    reveal_type(Category.objects.browsable())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet"
+    reveal_type(Category.objects.for_menu())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet"

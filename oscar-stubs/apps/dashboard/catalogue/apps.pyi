@@ -13,6 +13,7 @@ class CatalogueDashboardConfig(OscarDashboardConfig):
     permissions_map: dict[str, Any]
 
     product_list_view: type[View]
+    product_bulk_action_confirm_view: type[View]
     product_lookup_view: type[View]
     product_create_redirect_view: type[View]
     product_createupdate_view: type[View]

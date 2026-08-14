@@ -41,6 +41,9 @@ from oscar.apps.order.abstract_models import (
     AbstractShippingEvent as AbstractShippingEvent,
 )
 from oscar.apps.order.abstract_models import (
+    AbstractShippingEventQuantity as AbstractShippingEventQuantity,
+)
+from oscar.apps.order.abstract_models import (
     AbstractShippingEventType as AbstractShippingEventType,
 )
 from oscar.apps.order.abstract_models import (
@@ -48,9 +51,6 @@ from oscar.apps.order.abstract_models import (
 )
 from oscar.apps.order.abstract_models import (
     PaymentEventQuantity as PaymentEventQuantity,
-)
-from oscar.apps.order.abstract_models import (
-    ShippingEventQuantity as ShippingEventQuantity,
 )
 
 class Order(AbstractOrder):
@@ -81,6 +81,9 @@ class LineAttribute(AbstractLineAttribute):
     id: int
 
 class ShippingEvent(AbstractShippingEvent):
+    id: int
+
+class ShippingEventQuantity(AbstractShippingEventQuantity):
     id: int
 
 class ShippingEventType(AbstractShippingEventType):

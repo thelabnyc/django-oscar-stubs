@@ -9,7 +9,7 @@ description = "PEP 561 type stubs for django-oscar"
 readme = "README.md"
 license = { text = "ISC" }
 dependencies = [
-    "django-oscar>=4.1,<4.2",
+    "django-oscar>=4.2,<4.3",
     "django-stubs>=5.2.0",
     "django-treebeard-stubs>=4.8.4",
 ]

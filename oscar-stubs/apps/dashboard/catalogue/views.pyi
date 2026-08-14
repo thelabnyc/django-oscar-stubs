@@ -1,15 +1,27 @@
 from typing import Any
 
+from django import forms
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.views import generic
 from django_tables2 import SingleTableMixin, SingleTableView
-from oscar.apps.dashboard.catalogue.mixins import PartnerProductFilterMixin
+from oscar.apps.catalogue.abstract_models import AbstractCategory, AbstractProduct
+from oscar.apps.dashboard.catalogue.mixins import (
+    CategoryBulkActionMixin,
+    PartnerProductFilterMixin,
+    ProductBulkActionMixin,
+)
+from oscar.apps.dashboard.catalogue.utils import partner_product_visibility_q as partner_product_visibility_q
 from oscar.apps.dashboard.views import PopUpWindowCreateMixin, PopUpWindowDeleteMixin, PopUpWindowUpdateMixin
-from oscar.views.generic import ObjectLookupView
+from oscar.views.generic import IntermediateBulkActionView, ObjectLookupView
 
-class ProductListView(PartnerProductFilterMixin, SingleTableView):
+CategorySearchForm: type[forms.Form]
+ProductBulkActionForm: type[forms.Form]
+SetProductPriceForm: type[forms.Form]
+
+class ProductListView(ProductBulkActionMixin, PartnerProductFilterMixin, SingleTableView):
     template_name: str
+    model: type[AbstractProduct]
     form_class: type
     productclass_form_class: type
     table_class: type
@@ -21,6 +33,26 @@ class ProductListView(PartnerProductFilterMixin, SingleTableView):
     def get_table_pagination(self, table: Any) -> dict[str, int]: ...
     def get_queryset(self) -> QuerySet[Any]: ...
     def apply_search(self, queryset: QuerySet[Any]) -> QuerySet[Any]: ...
+
+class ProductBulkActionConfirmView(IntermediateBulkActionView):
+    max_displayable_products: int
+    def get_cancel_url(self) -> str: ...
+    def get_success_url(self) -> str: ...
+    def _get_action(self) -> Any: ...
+    def _is_structure_supported(self, structure: str) -> bool: ...
+    def get_selectable_queryset(self) -> QuerySet[Any]: ...
+    def _annotate_stockrecords_and_cheapest_price(
+        self, qs: QuerySet[Any], stockrecord_relation: str = ...
+    ) -> QuerySet[Any]: ...
+    def get_parent_queryset(self) -> QuerySet[Any]: ...
+    def get_standalone_queryset(self) -> QuerySet[Any]: ...
+    def get_form_kwargs(self) -> dict[str, Any]: ...
+    def get_objects(self, form: Any) -> QuerySet[Any]: ...
+    def get_structure_counts(self) -> tuple[int, int, int]: ...
+    def build_display_rows(
+        self, parent_selectable: bool, children_selectable: bool
+    ) -> tuple[list[dict[str, Any]], int]: ...
+    def get_context_data(self, form: Any = ..., **kwargs: Any) -> dict[str, Any]: ...
 
 class ProductCreateRedirectView(generic.RedirectView):
     permanent: bool
@@ -75,8 +107,9 @@ class StockAlertListView(generic.ListView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]: ...
     def get_queryset(self) -> QuerySet[Any]: ...
 
-class CategoryListView(SingleTableView):
+class CategoryListView(CategoryBulkActionMixin, SingleTableView):
     template_name: str
+    model: type[AbstractCategory]
     table_class: type
     form_class: type
     context_table_name: str
@@ -84,7 +117,7 @@ class CategoryListView(SingleTableView):
     def get_queryset(self) -> QuerySet[Any]: ...
     def get_context_data(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
 
-class CategoryDetailListView(SingleTableMixin, generic.DetailView):
+class CategoryDetailListView(CategoryBulkActionMixin, SingleTableMixin, generic.DetailView):
     template_name: str
     context_object_name: str
     table_class: type

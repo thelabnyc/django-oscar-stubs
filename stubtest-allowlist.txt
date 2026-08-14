@@ -72,14 +72,14 @@ oscar\.apps\..*\.subclass(_set)?
 #         ManyToMany descriptors, and Oscar Creator descriptors.
 #         Each line is one regex per model class with all its field names.
 # =============================================================================
-oscar\.apps\.address\.abstract_models\.AbstractAddress\.(country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
-oscar\.apps\.address\.abstract_models\.AbstractBillingAddress\.(country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
+oscar\.apps\.address\.abstract_models\.AbstractAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
+oscar\.apps\.address\.abstract_models\.AbstractBillingAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
 oscar\.apps\.address\.abstract_models\.AbstractCountry\.(display_order|is_shipping_country|iso_3166_1_a2|iso_3166_1_a3|iso_3166_1_numeric|name|printable_name)
-oscar\.apps\.address\.abstract_models\.AbstractPartnerAddress\.(country|first_name|last_name|line1|line2|line3|line4|partner|postcode|search_text|state|title)
-oscar\.apps\.address\.abstract_models\.AbstractShippingAddress\.(country|first_name|last_name|line1|line2|line3|line4|notes|postcode|search_text|state|title)
-oscar\.apps\.address\.abstract_models\.AbstractUserAddress\.(country|date_created|first_name|hash|is_default_for_billing|is_default_for_shipping|last_name|line1|line2|line3|line4|notes|num_orders_as_billing_address|num_orders_as_shipping_address|postcode|search_text|state|title|user)
+oscar\.apps\.address\.abstract_models\.AbstractPartnerAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|partner|postcode|search_text|state|title)
+oscar\.apps\.address\.abstract_models\.AbstractShippingAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|notes|postcode|search_text|state|title)
+oscar\.apps\.address\.abstract_models\.AbstractUserAddress\.(code|country|date_created|first_name|hash|is_default_for_billing|is_default_for_shipping|last_name|line1|line2|line3|line4|notes|num_orders_as_billing_address|num_orders_as_shipping_address|postcode|search_text|state|title|user)
 oscar\.apps\.address\.models\.Country\.(display_order|is_shipping_country|iso_3166_1_a2|iso_3166_1_a3|iso_3166_1_numeric|name|printable_name)
-oscar\.apps\.address\.models\.UserAddress\.(country|date_created|first_name|hash|is_default_for_billing|is_default_for_shipping|last_name|line1|line2|line3|line4|notes|num_orders_as_billing_address|num_orders_as_shipping_address|postcode|search_text|state|title|user)
+oscar\.apps\.address\.models\.UserAddress\.(code|country|date_created|first_name|hash|is_default_for_billing|is_default_for_shipping|last_name|line1|line2|line3|line4|notes|num_orders_as_billing_address|num_orders_as_shipping_address|postcode|search_text|state|title|user)
 oscar\.apps\.analytics\.abstract_models\.AbstractProductRecord\.(num_basket_additions|num_purchases|num_views|product|score)
 oscar\.apps\.analytics\.abstract_models\.AbstractUserProductView\.(date_created|product|user)
 oscar\.apps\.analytics\.abstract_models\.AbstractUserRecord\.(date_last_order|num_basket_additions|num_order_items|num_order_lines|num_orders|num_product_views|total_spent|user)
@@ -131,11 +131,11 @@ oscar\.apps\.catalogue\.models\.ProductCategory\.(category|product)
 oscar\.apps\.catalogue\.models\.ProductClass\.(name|options|requires_shipping|slug|track_stock)
 oscar\.apps\.catalogue\.models\.ProductImage\.(caption|code|date_created|display_order|product)
 oscar\.apps\.catalogue\.models\.ProductRecommendation\.(primary|ranking|recommendation)
-oscar\.apps\.catalogue\.reviews\.abstract_models\.AbstractProductReview\.(body|date_created|delta_votes|email|homepage|name|product|score|status|title|total_votes|user)
+oscar\.apps\.catalogue\.reviews\.abstract_models\.AbstractProductReview\.(body|code|date_created|delta_votes|email|homepage|name|product|score|status|title|total_votes|user)
 oscar\.apps\.catalogue\.reviews\.abstract_models\.AbstractVote\.(date_created|delta|review|user)
-oscar\.apps\.catalogue\.reviews\.models\.AbstractProductReview\.(body|date_created|delta_votes|email|homepage|name|product|score|status|title|total_votes|user)
+oscar\.apps\.catalogue\.reviews\.models\.AbstractProductReview\.(body|code|date_created|delta_votes|email|homepage|name|product|score|status|title|total_votes|user)
 oscar\.apps\.catalogue\.reviews\.models\.AbstractVote\.(date_created|delta|review|user)
-oscar\.apps\.catalogue\.reviews\.models\.ProductReview\.(body|date_created|delta_votes|email|homepage|name|product|score|status|title|total_votes|user)
+oscar\.apps\.catalogue\.reviews\.models\.ProductReview\.(body|code|date_created|delta_votes|email|homepage|name|product|score|status|title|total_votes|user)
 oscar\.apps\.catalogue\.reviews\.models\.Vote\.(date_created|delta|review|user)
 oscar\.apps\.checkout\.mixins\.OrderCreator
 oscar\.apps\.communication\.abstract_models\.AbstractCommunicationEventType\.(category|code|date_created|date_updated|email_body_html_template|email_body_template|email_subject_template|name|sms_template)
@@ -177,11 +177,11 @@ oscar\.apps\.order\.abstract_models\.AbstractOrderStatusChange\.(date_created|ne
 oscar\.apps\.order\.abstract_models\.AbstractPaymentEvent\.(amount|date_created|event_type|lines|order|reference|shipping_event)
 oscar\.apps\.order\.abstract_models\.AbstractPaymentEventType\.(code|name)
 oscar\.apps\.order\.abstract_models\.AbstractShippingEvent\.(date_created|event_type|lines|notes|order)
+oscar\.apps\.order\.abstract_models\.AbstractShippingEventQuantity\.(event|line|quantity)
 oscar\.apps\.order\.abstract_models\.AbstractShippingEventType\.(code|name)
 oscar\.apps\.order\.abstract_models\.AbstractSurcharge\.(code|excl_tax|incl_tax|name|order|tax_code)
 oscar\.apps\.order\.abstract_models\.PaymentEventQuantity\.(event|line|quantity)
-oscar\.apps\.order\.abstract_models\.ShippingEventQuantity\.(event|line|quantity)
-oscar\.apps\.order\.models\.AbstractBillingAddress\.(country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
+oscar\.apps\.order\.models\.AbstractBillingAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
 oscar\.apps\.order\.models\.AbstractCommunicationEvent\.(date_created|event_type|order)
 oscar\.apps\.order\.models\.AbstractLine\.(allocation_cancelled|line_price_before_discounts_excl_tax|line_price_before_discounts_incl_tax|line_price_excl_tax|line_price_incl_tax|num_allocated|order|partner|partner_line_notes|partner_line_reference|partner_name|partner_sku|product|quantity|status|stockrecord|tax_code|title|unit_price_excl_tax|unit_price_incl_tax|upc)
 oscar\.apps\.order\.models\.AbstractLineAttribute\.(line|option|type|value)
@@ -193,11 +193,12 @@ oscar\.apps\.order\.models\.AbstractOrderNote\.(date_created|date_updated|messag
 oscar\.apps\.order\.models\.AbstractOrderStatusChange\.(date_created|new_status|old_status|order)
 oscar\.apps\.order\.models\.AbstractPaymentEvent\.(amount|date_created|event_type|lines|order|reference|shipping_event)
 oscar\.apps\.order\.models\.AbstractPaymentEventType\.(code|name)
-oscar\.apps\.order\.models\.AbstractShippingAddress\.(country|first_name|last_name|line1|line2|line3|line4|notes|postcode|search_text|state|title)
+oscar\.apps\.order\.models\.AbstractShippingAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|notes|postcode|search_text|state|title)
 oscar\.apps\.order\.models\.AbstractShippingEvent\.(date_created|event_type|lines|notes|order)
+oscar\.apps\.order\.models\.AbstractShippingEventQuantity\.(event|line|quantity)
 oscar\.apps\.order\.models\.AbstractShippingEventType\.(code|name)
 oscar\.apps\.order\.models\.AbstractSurcharge\.(code|excl_tax|incl_tax|name|order|tax_code)
-oscar\.apps\.order\.models\.BillingAddress\.(country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
+oscar\.apps\.order\.models\.BillingAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|postcode|search_text|state|title)
 oscar\.apps\.order\.models\.CommunicationEvent\.(date_created|event_type|order)
 oscar\.apps\.order\.models\.Line\.(allocation_cancelled|line_price_before_discounts_excl_tax|line_price_before_discounts_incl_tax|line_price_excl_tax|line_price_incl_tax|num_allocated|order|partner|partner_line_notes|partner_line_reference|partner_name|partner_sku|product|quantity|status|stockrecord|tax_code|title|unit_price_excl_tax|unit_price_incl_tax|upc)
 oscar\.apps\.order\.models\.LineAttribute\.(line|option|type|value)
@@ -210,7 +211,7 @@ oscar\.apps\.order\.models\.OrderStatusChange\.(date_created|new_status|old_stat
 oscar\.apps\.order\.models\.PaymentEvent\.(amount|date_created|event_type|lines|order|reference|shipping_event)
 oscar\.apps\.order\.models\.PaymentEventQuantity\.(event|line|quantity)
 oscar\.apps\.order\.models\.PaymentEventType\.(code|name)
-oscar\.apps\.order\.models\.ShippingAddress\.(country|first_name|last_name|line1|line2|line3|line4|notes|postcode|search_text|state|title)
+oscar\.apps\.order\.models\.ShippingAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|notes|postcode|search_text|state|title)
 oscar\.apps\.order\.models\.ShippingEvent\.(date_created|event_type|lines|notes|order)
 oscar\.apps\.order\.models\.ShippingEventQuantity\.(event|line|quantity)
 oscar\.apps\.order\.models\.ShippingEventType\.(code|name)
@@ -219,7 +220,7 @@ oscar\.apps\.partner\.abstract_models\.AbstractPartner\.(code|name|users)
 oscar\.apps\.partner\.abstract_models\.AbstractStockAlert\.(date_closed|date_created|status|stockrecord|threshold)
 oscar\.apps\.partner\.abstract_models\.AbstractStockRecord\.(date_created|date_updated|low_stock_threshold|num_allocated|num_in_stock|partner|partner_sku|price|price_currency|product)
 oscar\.apps\.partner\.models\.Partner\.(code|name|users)
-oscar\.apps\.partner\.models\.PartnerAddress\.(country|first_name|last_name|line1|line2|line3|line4|partner|postcode|search_text|state|title)
+oscar\.apps\.partner\.models\.PartnerAddress\.(code|country|first_name|last_name|line1|line2|line3|line4|partner|postcode|search_text|state|title)
 oscar\.apps\.partner\.models\.StockAlert\.(date_closed|date_created|status|stockrecord|threshold)
 oscar\.apps\.partner\.models\.StockRecord\.(date_created|date_updated|low_stock_threshold|num_allocated|num_in_stock|partner|partner_sku|price|price_currency|product)
 oscar\.apps\.payment\.abstract_models\.AbstractBankcard\.(card_type|expiry_date|name|number|partner_reference|user)
@@ -276,6 +277,7 @@ oscar.apps.checkout.surcharges
 oscar.apps.communication.notifications
 oscar.apps.communication.notifications.context_processors
 oscar.apps.communication.notifications.views
+oscar.apps.customer.admin
 oscar.apps.customer.alerts
 oscar.apps.customer.alerts.receivers
 oscar.apps.customer.alerts.utils
@@ -527,7 +529,6 @@ oscar.apps.dashboard.catalogue.tables.AttributeOptionGroupTable.base_columns
 oscar.apps.dashboard.catalogue.tables.Category
 oscar.apps.dashboard.catalogue.tables.CategoryTable
 oscar.apps.dashboard.catalogue.tables.CategoryTable.base_columns
-oscar.apps.dashboard.catalogue.tables.CategoryTable.render_name
 oscar.apps.dashboard.catalogue.tables.DashboardTable
 oscar.apps.dashboard.catalogue.tables.DashboardTable.base_columns
 oscar.apps.dashboard.catalogue.tables.Option
@@ -655,8 +656,6 @@ oscar.apps.dashboard.partners.views.PartnerSearchForm
 oscar.apps.dashboard.partners.views.PartnerUserCreateView.model
 oscar.apps.dashboard.partners.views.User
 oscar.apps.dashboard.partners.views.UserEmailForm
-oscar.apps.dashboard.permissions.DashboardPermission.get_all_permissions
-oscar.apps.dashboard.permissions.DashboardPermission.has_dashboard_perms
 oscar.apps.dashboard.permissions.User
 oscar.apps.dashboard.ranges.forms.Product
 oscar.apps.dashboard.ranges.forms.Range
@@ -794,8 +793,6 @@ oscar.apps.offer.models.__all__
 oscar.apps.offer.results.PostOrderAction.description
 oscar.apps.order.abstract_models.PaymentEventQuantity.Meta
 oscar.apps.order.abstract_models.PaymentEventQuantity.id
-oscar.apps.order.abstract_models.ShippingEventQuantity.Meta
-oscar.apps.order.abstract_models.ShippingEventQuantity.id
 oscar.apps.order.abstract_models.logger
 oscar.apps.order.models.BillingAddress.id
 oscar.apps.order.models.BillingAddress.order_set
@@ -838,7 +835,6 @@ oscar.apps.order.models.ShippingAddress.order_set
 oscar.apps.order.models.ShippingEvent.id
 oscar.apps.order.models.ShippingEvent.line_quantities
 oscar.apps.order.models.ShippingEvent.payment_events
-oscar.apps.order.models.ShippingEventQuantity.Meta
 oscar.apps.order.models.ShippingEventQuantity.id
 oscar.apps.order.models.ShippingEventType.id
 oscar.apps.order.models.ShippingEventType.shippingevent_set
