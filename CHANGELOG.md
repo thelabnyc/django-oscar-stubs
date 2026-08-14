@@ -1,3 +1,13 @@
+## v4.2.0b0 (2026-08-14)
+
+### Feat
+
+- update stubs for django-oscar 4.2 compatibility
+
+### Fix
+
+- support mypy 2.3 and django-stubs 6.x
+
 ## v4.1.0b6 (2026-03-21)
 
 ### Fix
