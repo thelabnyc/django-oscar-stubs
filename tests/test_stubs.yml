@@ -456,3 +456,83 @@
     reveal_type(Category.objects.get())  # N: Revealed type is "oscar.apps.catalogue.models.Category"
     reveal_type(Category.objects.browsable())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet[oscar.apps.catalogue.models.Category]"
     reveal_type(Category.objects.for_menu())  # N: Revealed type is "oscar.apps.catalogue.managers.CategoryQuerySet[oscar.apps.catalogue.models.Category]"
+
+- case: annotated_forked_model_keeps_fork_identity
+  # The race plugin must come first: ChainedPlugin takes the first non-None hook,
+  # and mypy_oscar_plugin claims every class in a forked models module.
+  files:
+    - path: star_import_race_plugin.py
+      content: |
+        """Copy oscar's ``Order@AnnotatedWith`` into the forked module, as that
+        module's star import does when oscar's variant is built first.
+
+        Module processing order decides that in the wild, so pinning it here is the
+        only way to exercise the losing side on every run.  See
+        ``mypy_oscar_plugin._rebase_annotated_variants`` for why it matters.
+        """
+
+        from collections.abc import Callable
+
+        from mypy.nodes import TypeInfo
+        from mypy.plugin import ClassDefContext, Plugin
+
+        MARKER_CLASS = "tests.forked_order.models.StarImportRace"
+        OSCAR_MODELS = "oscar.apps.order.models"
+        FORKED_MODELS = "tests.forked_order.models"
+        ANNOTATED_ORDER = "Order@AnnotatedWith"
+
+
+        def _copy_annotated_variant(ctx: ClassDefContext) -> None:
+            modules = ctx.api.modules  # type: ignore[attr-defined]
+            oscar_module = modules.get(OSCAR_MODELS)
+            sym = oscar_module.names.get(ANNOTATED_ORDER) if oscar_module is not None else None
+            if sym is None or not isinstance(sym.node, TypeInfo):
+                if ctx.api.final_iteration:
+                    # Staying silent would leave the case passing while testing nothing.
+                    ctx.api.fail("star-import race could not be pinned", ctx.cls)
+                else:
+                    ctx.api.defer()
+                return
+
+            modules[FORKED_MODELS].names[ANNOTATED_ORDER] = sym
+
+
+        class StarImportRacePlugin(Plugin):
+            def get_customize_class_mro_hook(
+                self, fullname: str
+            ) -> Callable[[ClassDefContext], None] | None:
+                if fullname == MARKER_CLASS:
+                    return _copy_annotated_variant
+                return None
+
+
+        def plugin(version: str) -> type[Plugin]:
+            return StarImportRacePlugin
+  mypy_config: |
+    [mypy]
+    plugins =
+        star_import_race_plugin.py,
+        mypy_django_plugin.main,
+        mypy_oscar_plugin
+    [mypy.plugins.django-stubs]
+    django_settings_module = tests.mypy_test_settings_forked_order
+  main: |
+    # The annotated variant of a forked model has to stay interchangeable with
+    # the model itself, whichever module built it first.
+    from typing import TypedDict
+    from django.db.models import Count, QuerySet
+    from django_stubs_ext import WithAnnotations
+    from tests.forked_order.models import Order
+
+    class LineCount(TypedDict):
+        line_count: int
+
+    def takes_order(order: Order) -> None: ...
+
+    def annotated() -> QuerySet[WithAnnotations[Order, LineCount]]:
+        return Order.objects.annotate(line_count=Count("lines"))
+
+    for order in annotated():
+        takes_order(order)
+        reveal_type(order.lines.all())  # N: Revealed type is "django.db.models.query.QuerySet[tests.forked_order.models.Line, tests.forked_order.models.Line]"
+        reveal_type(order.line_count)  # N: Revealed type is "int"
