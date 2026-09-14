@@ -18,6 +18,11 @@ from oscar.apps.order.abstract_models import (
 )
 
 
+class StarImportRace:
+    """Hook point for the race plugin embedded in tests/test_stubs.yml
+    (case ``annotated_forked_model_keeps_fork_identity``); inert without it."""
+
+
 class Order(AbstractOrder):
     class Meta(AbstractOrder.Meta):
         app_label = "order"
@@ -101,3 +106,6 @@ class OrderLineDiscount(AbstractOrderLineDiscount):
 class Surcharge(AbstractSurcharge):
     class Meta(AbstractSurcharge.Meta):
         app_label = "order"
+
+
+from oscar.apps.order.models import *  # type: ignore[assignment] # noqa isort:skip

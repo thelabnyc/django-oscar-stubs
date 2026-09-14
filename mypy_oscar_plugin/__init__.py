@@ -20,6 +20,7 @@ import os
 import re
 import sys
 
+from mypy.mro import calculate_mro
 from mypy.nodes import (
     GDEF,
     FuncDef,
@@ -1358,6 +1359,49 @@ def _resolve_unbound_oscar_type(
     return None
 
 
+_ANNOTATED_MODEL_SUFFIX = "@AnnotatedWith"
+
+
+def _rebase_annotated_variants(
+    oscar_model_fullname: str,
+    forked_info: TypeInfo,
+    lookup: Callable[[str], SymbolTableNode | None],
+) -> None:
+    """Rebuild django-stubs' ``Model@AnnotatedWith`` classes on the forked model.
+
+    django-stubs synthesizes that class for every model as soon as mypy analyzes
+    its class definition -- not on first use -- and freezes its MRO right then.
+    A forked models module typically ends with
+    ``from oscar.apps.<app>.models import *``, which copies oscar's variant into
+    the fork's own namespace whenever it already exists -- so which variant the
+    fork gets is decided by module processing order.  The one built on the oscar
+    model is neither a subtype of the forked model nor carries its fields, which
+    surfaces as ``[arg-type]``, ``[override]`` and ``[attr-defined]`` errors on
+    annotated querysets.  Rebasing makes both orders agree.
+    """
+    forked_base = Instance(forked_info, [])
+
+    for fullname in (
+        oscar_model_fullname + _ANNOTATED_MODEL_SUFFIX,
+        forked_info.fullname + _ANNOTATED_MODEL_SUFFIX,
+    ):
+        sym = lookup(fullname)
+        if sym is None or not isinstance(sym.node, TypeInfo):
+            continue
+
+        annotated = sym.node
+        # Matched by name: once the hook points oscar's module at the fork, looking
+        # up the oscar model returns the fork, yet a variant built later still
+        # derives from the original oscar TypeInfo.
+        annotated.bases = [
+            forked_base if base.type.fullname == oscar_model_fullname else base for base in annotated.bases
+        ]
+        # calculate_mro short-circuits on a class that already has an MRO, and a
+        # variant built before unification is stale even when its bases are right.
+        annotated.mro = []
+        calculate_mro(annotated)
+
+
 def _replace_symbol_node(sym: SymbolTableNode, new_node: TypeInfo) -> SymbolTableNode:
     """Build a replacement SymbolTableNode pointing at ``new_node``.
 
@@ -1443,6 +1487,8 @@ def _unify_forked_model_hook(ctx: ClassDefContext, *, plugin: OscarPlugin) -> No
         # substitutable -- effectively the same type for type-checking.
         if forked_info not in old_info.mro:
             old_info.mro.insert(1, forked_info)
+
+        _rebase_annotated_variants(oscar_model_fqn, forked_info, plugin.lookup_fully_qualified)
 
         # Update the oscar module's symbol table
         oscar_module_fqn = f"oscar.apps.{oscar_path}.models"
